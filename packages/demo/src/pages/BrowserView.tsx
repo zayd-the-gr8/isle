@@ -19,6 +19,116 @@ export const browserState = createState({
 	frame: null! as Frame,
 });
 
+const HOMEPAGE_PREFERENCES_KEY = "scramjet-demo-homepage-preferences-v1";
+const HOMEPAGE_THEMES = [
+	"stark-night",
+	"stark-day",
+	"captain-night",
+	"captain-day",
+	"wanda-night",
+	"wanda-day",
+	"spider-night",
+	"spider-day",
+	"hulk-night",
+	"hulk-day",
+	"iron-night",
+	"iron-day",
+] as const;
+type HomepageTheme = (typeof HOMEPAGE_THEMES)[number];
+
+const TAB_CLOAKS = {
+	none: { title: "Scramjet Demo", icon: "/icon.png" },
+	gmail: { title: "Gmail", icon: "https://mail.google.com/favicon.ico" },
+	coursera: {
+		title: "Coursera",
+		icon: "https://www.coursera.org/favicon.ico",
+	},
+	classroom: {
+		title: "Google Classroom",
+		icon: "https://classroom.google.com/favicon.ico",
+	},
+	clever: { title: "Clever", icon: "https://clever.com/favicon.ico" },
+} as const;
+type TabCloak = keyof typeof TAB_CLOAKS;
+
+type HomepagePreferences = {
+	theme: HomepageTheme;
+	cloak: TabCloak;
+};
+
+const DEFAULT_HOMEPAGE_PREFERENCES: HomepagePreferences = {
+	theme: "stark-night",
+	cloak: "none",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isHomepageTheme(value: unknown): value is HomepageTheme {
+	return (
+		typeof value === "string" &&
+		HOMEPAGE_THEMES.some((theme) => theme === value)
+	);
+}
+
+function isTabCloak(value: unknown): value is TabCloak {
+	return typeof value === "string" && Object.hasOwn(TAB_CLOAKS, value);
+}
+
+function readHomepagePreferences(): HomepagePreferences {
+	try {
+		const raw = localStorage.getItem(HOMEPAGE_PREFERENCES_KEY);
+		if (!raw) return { ...DEFAULT_HOMEPAGE_PREFERENCES };
+
+		const parsed: unknown = JSON.parse(raw);
+		if (!isRecord(parsed)) {
+			throw new TypeError(
+				"Saved homepage preferences are not an object."
+			);
+		}
+
+		return {
+			theme: isHomepageTheme(parsed.theme)
+				? parsed.theme
+				: DEFAULT_HOMEPAGE_PREFERENCES.theme,
+			cloak: isTabCloak(parsed.cloak)
+				? parsed.cloak
+				: DEFAULT_HOMEPAGE_PREFERENCES.cloak,
+		};
+	} catch (error) {
+		console.error("Unable to load saved homepage preferences.", error);
+		return { ...DEFAULT_HOMEPAGE_PREFERENCES };
+	}
+}
+
+function getHomepageDestination(query: string): string {
+	if (/^https?:\/\//i.test(query)) {
+		return new URL(query).toString();
+	}
+
+	if (
+		/^(?:localhost|(?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z]{2,})(?::\d{1,5})?(?:[/?#]\S*)?$/i.test(
+			query
+		)
+	) {
+		return new URL(`https://${query}`).toString();
+	}
+
+	return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+}
+
+function applyTabCloak(cloak: TabCloak) {
+	const selectedCloak = TAB_CLOAKS[cloak];
+	document.title = selectedCloak.title;
+	const favicon =
+		document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+	if (!favicon) {
+		throw new Error("The document is missing its favicon link.");
+	}
+	favicon.href = selectedCloak.icon;
+}
+
 export const Omnibox: Component = function (cx) {
 	const navigate = () => {
 		if (!browserState.url.startsWith("http")) {
@@ -42,14 +152,18 @@ export const Omnibox: Component = function (cx) {
 						class="nav-btn"
 						on:click={() => browserState.frame?.back()}
 					>
-						<span class="material-symbols-outlined">arrow_back</span>
+						<span class="material-symbols-outlined">
+							arrow_back
+						</span>
 					</button>
 					<button
 						type="button"
 						class="nav-btn"
 						on:click={() => browserState.frame?.forward()}
 					>
-						<span class="material-symbols-outlined">arrow_forward</span>
+						<span class="material-symbols-outlined">
+							arrow_forward
+						</span>
 					</button>
 					<button
 						type="button"
@@ -158,11 +272,122 @@ const BrowserView: Component<
 		});
 		let catchEscapedLinks = new CatchEscapedLinksPlugin(
 			(url) =>
-				new URL(`/?goto=${encodeURIComponent(url.href)}`, location.origin)
+				new URL(
+					`/?goto=${encodeURIComponent(url.href)}`,
+					location.origin
+				)
 		);
 		browserState.frame = controller.createFrame(this.frameel, {
 			plugins: [cachePlugin, urlWatcher, catchEscapedLinks],
 		});
+		const messageToken = crypto.randomUUID();
+		const preferences = readHomepagePreferences();
+		applyTabCloak(preferences.cloak);
+		window.addEventListener("message", (event: MessageEvent<unknown>) => {
+			if (
+				event.source !== this.frameel.contentWindow ||
+				!isRecord(event.data) ||
+				event.data.token !== messageToken
+			) {
+				return;
+			}
+
+			if (event.data.type === "scramjet-homepage-navigate") {
+				if (typeof event.data.query !== "string") {
+					console.warn(
+						"Ignoring homepage navigation without a search query."
+					);
+					return;
+				}
+
+				const query = event.data.query.trim();
+				if (!query) return;
+
+				let destination: string;
+				try {
+					destination = getHomepageDestination(query);
+				} catch (error) {
+					console.error(
+						"Unable to parse the homepage address.",
+						error
+					);
+					this.frameel.contentWindow?.postMessage(
+						{
+							type: "scramjet-homepage-error",
+							token: messageToken,
+							message: "That web address is not valid.",
+						},
+						"*"
+					);
+					return;
+				}
+
+				browserState.url = destination;
+				demoSettingsStore.homeUrl = destination;
+				browserState.frame?.go(destination);
+				return;
+			}
+
+			if (event.data.type !== "scramjet-homepage-settings") return;
+			const nextSettings = event.data.settings;
+			if (
+				!isRecord(nextSettings) ||
+				!isHomepageTheme(nextSettings.theme) ||
+				!isTabCloak(nextSettings.cloak)
+			) {
+				console.warn("Ignoring invalid homepage settings message.");
+				this.frameel.contentWindow?.postMessage(
+					{
+						type: "scramjet-homepage-error",
+						token: messageToken,
+						message:
+							"Invalid settings. Please choose an option from each list.",
+					},
+					"*"
+				);
+				return;
+			}
+
+			const updatedPreferences: HomepagePreferences = {
+				theme: nextSettings.theme,
+				cloak: nextSettings.cloak,
+			};
+			preferences.theme = updatedPreferences.theme;
+			preferences.cloak = updatedPreferences.cloak;
+			applyTabCloak(updatedPreferences.cloak);
+
+			try {
+				localStorage.setItem(
+					HOMEPAGE_PREFERENCES_KEY,
+					JSON.stringify(updatedPreferences)
+				);
+			} catch (error) {
+				console.error("Unable to save homepage preferences.", error);
+				this.frameel.contentWindow?.postMessage(
+					{
+						type: "scramjet-homepage-error",
+						token: messageToken,
+						message:
+							"Settings applied, but could not be saved in this browser.",
+					},
+					"*"
+				);
+			}
+		});
+		this.frameel.addEventListener(
+			"load",
+			() => {
+				this.frameel.contentWindow?.postMessage(
+					{
+						type: "scramjet-homepage-init",
+						token: messageToken,
+						settings: preferences,
+					},
+					"*"
+				);
+			},
+			{ once: true }
+		);
 		let realHomepage = homepage;
 		realHomepage = realHomepage.replaceAll(
 			"{{SCRAMJET_VERSION}}",
@@ -178,6 +403,10 @@ const BrowserView: Component<
 				dateStyle: "short",
 				timeStyle: "short",
 			})
+		);
+		realHomepage = realHomepage.replaceAll(
+			"{{PREFERENCE_TOKEN}}",
+			messageToken
 		);
 		this.frameel.src = `data:text/html;base64,${btoa(realHomepage)}`;
 

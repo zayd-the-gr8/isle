@@ -12,10 +12,7 @@
 		/>
 		<style>
 			:root {
-				color-scheme: dark;
 				font-family: "Bitcount Grid Single", monospace;
-				background: #050505;
-				color: #f5f5f5;
 			}
 
 			* {
@@ -23,21 +20,173 @@
 			}
 
 			body {
+				--page-bg: #050505;
+				--grid-line: rgb(255 255 255 / 6%);
+				--glow: #171717;
+				--text: #f5f5f5;
+				--muted: #686868;
+				--field-bg: #030303;
+				--field-border: #111;
+				--field-glow: rgb(255 255 255 / 10%);
+				--accent: #aaa;
+				color-scheme: dark;
 				display: grid;
 				width: 100%;
 				min-width: 240px;
 				min-height: 100vh;
 				margin: 0;
 				place-items: center;
-				background-color: #050505;
+				background-color: var(--page-bg);
 				background-image:
-					linear-gradient(rgb(255 255 255 / 6%) 1px, transparent 1px),
-					linear-gradient(90deg, rgb(255 255 255 / 6%) 1px, transparent 1px),
-					radial-gradient(ellipse at center, #171717 0, #090909 48%, #030303 78%);
+					linear-gradient(var(--grid-line) 1px, transparent 1px),
+					linear-gradient(
+						90deg,
+						var(--grid-line) 1px,
+						transparent 1px
+					),
+					radial-gradient(
+						ellipse at center,
+						var(--glow) 0,
+						var(--page-bg) 78%
+					);
 				background-size:
 					32px 32px,
 					32px 32px,
 					100% 100%;
+				color: var(--text);
+			}
+
+			body[data-theme="stark-day"] {
+				--page-bg: #f4f3ef;
+				--grid-line: rgb(25 25 25 / 8%);
+				--glow: #fff;
+				--text: #202020;
+				--muted: #666;
+				--field-bg: #fff;
+				--field-border: #d3d1ca;
+				--field-glow: rgb(25 25 25 / 10%);
+				--accent: #333;
+				color-scheme: light;
+			}
+
+			body[data-theme="captain-night"] {
+				--page-bg: #071426;
+				--grid-line: rgb(135 175 225 / 9%);
+				--glow: #142a48;
+				--muted: #9ab2cf;
+				--field-bg: #050d19;
+				--field-border: #1d3655;
+				--field-glow: rgb(74 133 207 / 22%);
+				--accent: #b7d5ff;
+			}
+
+			body[data-theme="captain-day"] {
+				--page-bg: #e8f0fb;
+				--grid-line: rgb(24 58 103 / 9%);
+				--glow: #fff;
+				--text: #142b48;
+				--muted: #506b8b;
+				--field-bg: #f9fbff;
+				--field-border: #bfcee1;
+				--field-glow: rgb(36 87 150 / 17%);
+				--accent: #244f83;
+				color-scheme: light;
+			}
+
+			body[data-theme="wanda-night"] {
+				--page-bg: #210d20;
+				--grid-line: rgb(235 150 224 / 9%);
+				--glow: #401d3c;
+				--muted: #d2a3cb;
+				--field-bg: #160914;
+				--field-border: #51264b;
+				--field-glow: rgb(224 87 195 / 22%);
+				--accent: #ffc2f1;
+			}
+
+			body[data-theme="wanda-day"] {
+				--page-bg: #fff0fa;
+				--grid-line: rgb(106 38 88 / 8%);
+				--glow: #fff;
+				--text: #421a39;
+				--muted: #805274;
+				--field-bg: #fffaff;
+				--field-border: #e7bfdc;
+				--field-glow: rgb(175 57 139 / 16%);
+				--accent: #8c326f;
+				color-scheme: light;
+			}
+
+			body[data-theme="spider-night"] {
+				--page-bg: #20090b;
+				--grid-line: rgb(255 130 130 / 9%);
+				--glow: #451416;
+				--muted: #d59b9d;
+				--field-bg: #120506;
+				--field-border: #572024;
+				--field-glow: rgb(232 58 65 / 23%);
+				--accent: #ffb1b1;
+			}
+
+			body[data-theme="spider-day"] {
+				--page-bg: #fff0ef;
+				--grid-line: rgb(100 25 28 / 8%);
+				--glow: #fff;
+				--text: #421719;
+				--muted: #805052;
+				--field-bg: #fffafa;
+				--field-border: #e8c1c1;
+				--field-glow: rgb(184 42 48 / 16%);
+				--accent: #a22930;
+				color-scheme: light;
+			}
+
+			body[data-theme="hulk-night"] {
+				--page-bg: #0c190c;
+				--grid-line: rgb(163 235 135 / 9%);
+				--glow: #1b3518;
+				--muted: #a6c99c;
+				--field-bg: #071007;
+				--field-border: #294b25;
+				--field-glow: rgb(113 211 71 / 22%);
+				--accent: #c2ffa9;
+			}
+
+			body[data-theme="hulk-day"] {
+				--page-bg: #eff8e9;
+				--grid-line: rgb(37 79 27 / 8%);
+				--glow: #fff;
+				--text: #20371a;
+				--muted: #58744e;
+				--field-bg: #fbfff8;
+				--field-border: #c9dbbf;
+				--field-glow: rgb(75 135 48 / 16%);
+				--accent: #3b7028;
+				color-scheme: light;
+			}
+
+			body[data-theme="iron-night"] {
+				--page-bg: #1e1706;
+				--grid-line: rgb(255 220 119 / 9%);
+				--glow: #40300d;
+				--muted: #d1bd86;
+				--field-bg: #120e04;
+				--field-border: #594514;
+				--field-glow: rgb(241 183 41 / 23%);
+				--accent: #ffe28c;
+			}
+
+			body[data-theme="iron-day"] {
+				--page-bg: #fff7dc;
+				--grid-line: rgb(96 67 11 / 8%);
+				--glow: #fff;
+				--text: #3c2d0b;
+				--muted: #79642f;
+				--field-bg: #fffdf5;
+				--field-border: #e4d39d;
+				--field-glow: rgb(170 125 23 / 17%);
+				--accent: #8b6711;
+				color-scheme: light;
 			}
 
 			main {
@@ -51,7 +200,7 @@
 
 			h1 {
 				margin: 0;
-				color: #f5f5f5;
+				color: var(--text);
 				font-size: clamp(2.5rem, 11vw, 3.5rem);
 				font-weight: 500;
 				letter-spacing: 0.02em;
@@ -60,29 +209,144 @@
 			}
 
 			.search-hint {
-				display: grid;
+				display: flex;
 				width: 100%;
 				min-height: 48px;
-				padding: 0 20px;
-				place-items: center;
-				border: 1px solid #111;
+				padding: 0 12px;
+				align-items: center;
+				border: 1px solid var(--field-border);
 				border-radius: 999px;
-				background: #030303;
-				box-shadow: 0 0 32px rgb(255 255 255 / 10%);
-				color: #686868;
-				font-size: 0.85rem;
-				letter-spacing: 0.04em;
-				text-align: center;
+				background: var(--field-bg);
+				box-shadow: 0 0 32px var(--field-glow);
 				transition:
 					border-color 180ms ease,
 					box-shadow 180ms ease,
 					color 180ms ease;
 			}
 
-			.search-hint:hover {
-				border-color: #444;
-				box-shadow: 0 0 34px rgb(255 255 255 / 18%);
-				color: #aaa;
+			.search-hint:hover,
+			.search-hint:focus-within {
+				border-color: var(--accent);
+				box-shadow: 0 0 34px var(--field-glow);
+			}
+
+			.search-input {
+				width: 100%;
+				min-width: 0;
+				min-height: 44px;
+				padding: 0 8px;
+				border: 0;
+				outline: 0;
+				background: transparent;
+				color: var(--text);
+				font: inherit;
+				font-size: 0.85rem;
+				letter-spacing: 0.04em;
+				text-align: center;
+			}
+
+			.search-input::placeholder {
+				color: var(--muted);
+				opacity: 1;
+			}
+
+			.search-input:focus::placeholder {
+				opacity: 0.65;
+			}
+
+			.settings-button {
+				position: fixed;
+				right: 18px;
+				bottom: 18px;
+				display: grid;
+				width: 38px;
+				height: 38px;
+				padding: 0;
+				place-items: center;
+				border: 1px solid var(--field-border);
+				border-radius: 50%;
+				background: var(--field-bg);
+				box-shadow: 0 0 18px var(--field-glow);
+				color: var(--text);
+				font: inherit;
+				font-size: 1.15rem;
+				cursor: pointer;
+			}
+
+			.settings-button:hover,
+			.settings-button:focus-visible {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+
+			.settings-dialog {
+				position: fixed;
+				inset: auto 18px 66px auto;
+				width: min(320px, calc(100vw - 36px));
+				max-width: none;
+				max-height: min(80vh, 500px);
+				margin: 0;
+				padding: 20px;
+				border: 1px solid var(--field-border);
+				border-radius: 12px;
+				background: var(--page-bg);
+				box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+				color: var(--text);
+				font-family: "Bitcount Grid Single", monospace;
+			}
+
+			.settings-dialog::backdrop {
+				background: rgb(0 0 0 / 28%);
+			}
+
+			.settings-header {
+				display: flex;
+				margin-bottom: 18px;
+				align-items: center;
+				justify-content: space-between;
+			}
+
+			.settings-header h2 {
+				margin: 0;
+				font-size: 1.2rem;
+				font-weight: 500;
+			}
+
+			.close-settings {
+				width: 30px;
+				height: 30px;
+				border: 1px solid var(--field-border);
+				border-radius: 50%;
+				background: var(--field-bg);
+				color: var(--text);
+				font: inherit;
+				cursor: pointer;
+			}
+
+			.setting {
+				display: grid;
+				gap: 8px;
+				margin-top: 16px;
+				font-size: 0.88rem;
+			}
+
+			.setting select {
+				width: 100%;
+				min-height: 40px;
+				padding: 6px 10px;
+				border: 1px solid var(--field-border);
+				border-radius: 6px;
+				background: var(--field-bg);
+				color: var(--text);
+				font: inherit;
+				font-size: 0.8rem;
+			}
+
+			.settings-status {
+				min-height: 1.2em;
+				margin: 14px 0 0;
+				color: var(--muted);
+				font-size: 0.72rem;
 			}
 
 			@media (prefers-reduced-motion: reduce) {
@@ -95,7 +359,163 @@
 	<body>
 		<main>
 			<h1>/isle</h1>
-			<div class="search-hint">search, or type a url</div>
+			<form class="search-hint" id="homepage-search" role="search">
+				<input
+					class="search-input"
+					id="homepage-query"
+					type="text"
+					placeholder="search, or type a url"
+					aria-label="search, or type a url"
+					autocomplete="off"
+					spellcheck="false"
+				/>
+			</form>
 		</main>
+		<button
+			class="settings-button"
+			id="settings-button"
+			type="button"
+			aria-label="Settings"
+			title="Settings"
+		>
+			⚙
+		</button>
+		<dialog
+			class="settings-dialog"
+			id="settings-dialog"
+			aria-labelledby="settings-title"
+		>
+			<div class="settings-header">
+				<h2 id="settings-title">Settings</h2>
+				<button
+					class="close-settings"
+					id="close-settings"
+					type="button"
+					aria-label="Close settings"
+				>
+					×
+				</button>
+			</div>
+			<label class="setting" for="theme-select">
+				Appearance
+				<select id="theme-select">
+					<option value="stark-night">Stark Night · Dark</option>
+					<option value="stark-day">Stark Day · Light</option>
+					<option value="captain-night">
+						Captain America · Navy · Dark
+					</option>
+					<option value="captain-day">
+						Captain America · Navy · Light
+					</option>
+					<option value="wanda-night">
+						Scarlet Witch · Pink · Dark
+					</option>
+					<option value="wanda-day">
+						Scarlet Witch · Pink · Light
+					</option>
+					<option value="spider-night">
+						Spider-Man · Red · Dark
+					</option>
+					<option value="spider-day">Spider-Man · Red · Light</option>
+					<option value="hulk-night">Hulk · Green · Dark</option>
+					<option value="hulk-day">Hulk · Green · Light</option>
+					<option value="iron-night">Iron Man · Yellow · Dark</option>
+					<option value="iron-day">Iron Man · Yellow · Light</option>
+				</select>
+			</label>
+			<label class="setting" for="cloak-select">
+				Tab cloak
+				<select id="cloak-select">
+					<option value="none">Off · Scramjet Demo</option>
+					<option value="gmail">Gmail</option>
+					<option value="coursera">Coursera</option>
+					<option value="classroom">Google Classroom</option>
+					<option value="clever">Clever</option>
+				</select>
+			</label>
+			<p class="settings-status" id="settings-status" role="status"></p>
+		</dialog>
+		<script>
+			(() => {
+				const messageToken = "{{PREFERENCE_TOKEN}}";
+				const themeSelect = document.querySelector("#theme-select");
+				const cloakSelect = document.querySelector("#cloak-select");
+				const status = document.querySelector("#settings-status");
+				const settings = { theme: "stark-night", cloak: "none" };
+
+				function updateStatus(message) {
+					status.textContent = message;
+				}
+
+				function applySettings(nextSettings) {
+					document.body.dataset.theme = nextSettings.theme;
+					themeSelect.value = nextSettings.theme;
+					cloakSelect.value = nextSettings.cloak;
+				}
+
+				window.addEventListener("message", (event) => {
+					if (
+						event.source !== window.parent ||
+						!event.data ||
+						event.data.token !== messageToken
+					) {
+						return;
+					}
+
+					if (event.data.type === "scramjet-homepage-init") {
+						applySettings(event.data.settings);
+						updateStatus("");
+					} else if (event.data.type === "scramjet-homepage-error") {
+						updateStatus(event.data.message);
+					}
+				});
+
+				function saveSettings() {
+					settings.theme = themeSelect.value;
+					settings.cloak = cloakSelect.value;
+					document.body.dataset.theme = settings.theme;
+					updateStatus("");
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-settings",
+							token: messageToken,
+							settings,
+						},
+						"*"
+					);
+				}
+
+				themeSelect.addEventListener("change", saveSettings);
+				cloakSelect.addEventListener("change", saveSettings);
+				document
+					.querySelector("#settings-button")
+					.addEventListener("click", () =>
+						document.querySelector("#settings-dialog").showModal()
+					);
+				document
+					.querySelector("#close-settings")
+					.addEventListener("click", () =>
+						document.querySelector("#settings-dialog").close()
+					);
+				document
+					.querySelector("#homepage-search")
+					.addEventListener("submit", (event) => {
+						event.preventDefault();
+						const query = document
+							.querySelector("#homepage-query")
+							.value.trim();
+						if (!query) return;
+
+						window.parent.postMessage(
+							{
+								type: "scramjet-homepage-navigate",
+								token: messageToken,
+								query,
+							},
+							"*"
+						);
+					});
+			})();
+		</script>
 	</body>
 </html>
