@@ -1,5 +1,6 @@
 import { css, type Component } from "dreamland/core";
 import { controller, getTransport } from "..";
+import FlagEditor from "../components/FlagEditor";
 import {
 	AVAILABLE_TRANSPORTS,
 	type AvailableTransports,
@@ -181,6 +182,11 @@ const SettingsView: Component<
 			{use(this.status).map((status) =>
 				status ? <div class="message status">{status}</div> : null
 			)}
+
+			<details class="dev-options">
+				<summary>Dev options</summary>
+				<FlagEditor embedded={true} />
+			</details>
 		</div>
 	);
 };
@@ -327,6 +333,26 @@ SettingsView.style = css`
 
 	.message.status {
 		color: #b8c2cc;
+	}
+
+	.dev-options {
+		max-width: 720px;
+		margin-top: 20px;
+		border: 1px solid #2a2a2a;
+		background: #111;
+	}
+
+	.dev-options summary {
+		padding: 0.75em 0.9em;
+		color: #e5e7eb;
+		cursor: pointer;
+		font-size: 0.84rem;
+		font-weight: 600;
+		list-style-position: inside;
+	}
+
+	.dev-options[open] summary {
+		border-bottom: 1px solid #2a2a2a;
 	}
 `;
 export default SettingsView;

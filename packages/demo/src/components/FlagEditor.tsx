@@ -41,6 +41,7 @@ const flagDescriptions: Record<keyof ScramjetFlags, string> = {
 const FlagEditor: Component<
 	{
 		inline?: boolean;
+		embedded?: boolean;
 	},
 	{},
 	{
@@ -48,7 +49,7 @@ const FlagEditor: Component<
 		cacheBustStatus: string;
 	}
 > = function (cx) {
-	this.isOpen = false;
+	this.isOpen = Boolean(this.embedded);
 	this.cacheBustStatus = "";
 
 	const toggleFlag = (flag: keyof ScramjetFlags, value: boolean) => {
@@ -84,17 +85,20 @@ const FlagEditor: Component<
 	return (
 		<div
 			class={use(this.inline).map(
-				(inline) => `flag-editor ${inline ? "inline" : ""}`
+				(inline) =>
+					`flag-editor ${inline ? "inline" : ""} ${this.embedded ? "embedded" : ""}`
 			)}
 		>
-			<button
-				class="toggle-button"
-				on:click={() => {
-					this.isOpen = !this.isOpen;
-				}}
-			>
-				{use(this.isOpen).map((open) => (open ? "▼" : "▶"))} Flag Editor
-			</button>
+			{this.embedded ? null : (
+				<button
+					class="toggle-button"
+					on:click={() => {
+						this.isOpen = !this.isOpen;
+					}}
+				>
+					{use(this.isOpen).map((open) => (open ? "▼" : "▶"))} Flag Editor
+				</button>
+			)}
 			{use(this.isOpen).andThen(
 				<div class="editor-panel">
 					<div class="header">
@@ -119,7 +123,10 @@ const FlagEditor: Component<
 										type="checkbox"
 										checked={use(flagStore[flag])}
 										on:change={(e: Event) =>
-											toggleFlag(flag, (e.target as HTMLInputElement).checked)
+											toggleFlag(
+												flag,
+												(e.target as HTMLInputElement).checked
+											)
 										}
 									/>
 									<div class="flag-info">
@@ -163,6 +170,18 @@ FlagEditor.style = css`
 		border: none;
 		box-shadow: none;
 		max-width: none;
+	}
+
+	:scope.embedded {
+		position: static;
+		max-width: none;
+		background: transparent;
+		border: none;
+		border-radius: 0;
+		box-shadow: none;
+		color: inherit;
+		font-family: inherit;
+		font-size: inherit;
 	}
 
 	.toggle-button {
@@ -216,6 +235,19 @@ FlagEditor.style = css`
 		border-radius: 8px;
 		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 		z-index: 1000;
+	}
+
+	:scope.embedded .editor-panel {
+		position: static;
+		min-width: 0;
+		max-height: 60vh;
+		padding: 1em 0 0;
+		overflow-y: auto;
+		border: 0;
+		border-top: 1px solid #444;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
 	}
 
 	.header {

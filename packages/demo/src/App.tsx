@@ -1,6 +1,5 @@
 import { css, createDelegate, type Component } from "dreamland/core";
 import type { Frame } from "@mercuryworkshop/scramjet-controller";
-import FlagEditor from "./components/FlagEditor";
 import BrowserView from "./pages/BrowserView";
 import RequestViewer from "./pages/RequestViewer";
 import PlaygroundView from "./pages/Playground";
@@ -66,9 +65,6 @@ const App: Component<
 					{use(this.activeTab)
 						.map((tab) => tab === "browser")
 						.andThen(<Omnibox />)}
-				</div>
-				<div class="top-actions">
-					<FlagEditor inline={true} />
 				</div>
 			</div>
 			<div
@@ -184,13 +180,6 @@ App.style = css`
 		color: #fff;
 		border-color: #4a4a4a;
 		margin-bottom: -1px;
-	}
-	.top-actions {
-		display: flex;
-		align-items: center;
-		margin-left: auto;
-		padding: 0 0.35em;
-		min-height: 28px;
 	}
 	.tab-panel {
 		flex: 1;
