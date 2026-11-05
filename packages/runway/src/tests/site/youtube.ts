@@ -21,9 +21,11 @@ export default [
 			const title = frame.locator("#video-title > yt-formatted-string").first();
 			await title.waitFor({ state: "visible", timeout: 30000 });
 
-			const thumbnail = frame.locator(
-				"#contents > ytd-video-renderer:nth-child(1) > #dismissible > ytd-thumbnail > a > yt-image > img"
-			);
+			const thumbnail = frame
+				.locator(
+					"#contents > ytd-video-renderer:nth-child(1) > #dismissible > ytd-thumbnail > a > yt-image > img"
+				)
+				.first();
 			await thumbnail.waitFor({ state: "visible", timeout: 30000 });
 		},
 	}),
