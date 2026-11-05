@@ -614,6 +614,20 @@
 					);
 				}
 
+				function submitHomepageSearch() {
+					const query = document.querySelector("#homepage-query").value.trim();
+					if (!query) return;
+
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-navigate",
+							token: messageToken,
+							query,
+						},
+						"*"
+					);
+				}
+
 				themeSelect.addEventListener("change", saveSettings);
 				cloakSelect.addEventListener("change", saveSettings);
 				document.querySelector("#apply-runtime-settings").addEventListener("click", () => {
@@ -643,17 +657,12 @@
 					.addEventListener("click", () => document.querySelector("#settings-dialog").close());
 				document.querySelector("#homepage-search").addEventListener("submit", (event) => {
 					event.preventDefault();
-					const query = document.querySelector("#homepage-query").value.trim();
-					if (!query) return;
-
-					window.parent.postMessage(
-						{
-							type: "scramjet-homepage-navigate",
-							token: messageToken,
-							query,
-						},
-						"*"
-					);
+					submitHomepageSearch();
+				});
+				document.querySelector("#homepage-query").addEventListener("keydown", (event) => {
+					if (event.key !== "Enter") return;
+					event.preventDefault();
+					submitHomepageSearch();
 				});
 				document.querySelector("#open-feature-flags").addEventListener("click", () => {
 					window.parent.postMessage(

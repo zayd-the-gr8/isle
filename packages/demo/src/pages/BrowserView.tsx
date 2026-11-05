@@ -18,23 +18,30 @@ type BrowserTab = {
 	url: string;
 	isHomepage: boolean;
 	zoom: number;
+};
+
+type BrowserTabRuntime = {
 	frame: Frame | null;
 	element: HTMLIFrameElement;
 	token: string;
 };
 
 let nextTabId = 1;
+const browserTabRuntime = new Map<number, BrowserTabRuntime>();
 
 function createBrowserTab(): BrowserTab {
-	return {
+	const tab = {
 		id: nextTabId++,
 		url: demoSettingsStore.homeUrl,
 		isHomepage: true,
 		zoom: 100,
+	};
+	browserTabRuntime.set(tab.id, {
 		frame: null,
 		element: document.createElement("iframe"),
 		token: crypto.randomUUID(),
-	};
+	});
+	return tab;
 }
 
 const initialBrowserTab = createBrowserTab();
@@ -137,6 +144,30 @@ function getActiveBrowserTab(): BrowserTab | undefined {
 	return browserState.tabs.find((tab) => tab.id === browserState.activeTabId);
 }
 
+function getBrowserTabRuntime(tab: BrowserTab): BrowserTabRuntime {
+	const runtime = browserTabRuntime.get(tab.id);
+	if (!runtime) {
+		throw new Error(`Browser tab ${tab.id} has no runtime.`);
+	}
+	return runtime;
+}
+
+function navigateBrowserTab(tab: BrowserTab, destination: string) {
+	const runtime = getBrowserTabRuntime(tab);
+	if (!runtime.frame) {
+		throw new Error(`Browser tab ${tab.id} is not ready to navigate.`);
+	}
+
+	runtime.frame.go(destination);
+	tab.url = destination;
+	tab.isHomepage = false;
+	browserState.tabs = [...browserState.tabs];
+	if (browserState.activeTabId === tab.id) {
+		browserState.url = destination;
+		demoSettingsStore.homeUrl = destination;
+	}
+}
+
 function getBrowserTabLabel(tab: BrowserTab): string {
 	if (tab.isHomepage) return "New tab";
 
@@ -150,9 +181,10 @@ function getBrowserTabLabel(tab: BrowserTab): string {
 function setTabZoom(tab: BrowserTab, zoom: number) {
 	tab.zoom = zoom;
 	const scale = zoom / 100;
-	tab.element.style.zoom = String(scale);
-	tab.element.style.width = `${100 / scale}%`;
-	tab.element.style.height = `${100 / scale}%`;
+	const { element } = getBrowserTabRuntime(tab);
+	element.style.zoom = String(scale);
+	element.style.width = `${100 / scale}%`;
+	element.style.height = `${100 / scale}%`;
 	browserState.tabs = [...browserState.tabs];
 }
 
@@ -187,14 +219,9 @@ export const Omnibox: Component = function (cx) {
 			const destination = getNavigationDestination(query);
 			const tab = getActiveBrowserTab();
 			if (!tab) return;
-			tab.url = destination;
-			tab.isHomepage = false;
-			browserState.tabs = [...browserState.tabs];
-			browserState.url = destination;
-			demoSettingsStore.homeUrl = destination;
-			tab.frame?.go(destination);
+			navigateBrowserTab(tab, destination);
 		} catch (error) {
-			console.error("Unable to parse the browser address.", error);
+			console.error("Unable to navigate to the browser address.", error);
 		}
 	};
 	return (
@@ -202,6 +229,11 @@ export const Omnibox: Component = function (cx) {
 			class="url-form"
 			on:submit={(e: SubmitEvent) => {
 				e.preventDefault();
+				navigate();
+			}}
+			on:keydown={(event: KeyboardEvent) => {
+				if (event.key !== "Enter") return;
+				event.preventDefault();
 				navigate();
 			}}
 		>
@@ -212,7 +244,10 @@ export const Omnibox: Component = function (cx) {
 						class="nav-btn"
 						aria-label="Go back"
 						title="Go back"
-						on:click={() => getActiveBrowserTab()?.frame?.back()}
+						on:click={() => {
+							const tab = getActiveBrowserTab();
+							if (tab) getBrowserTabRuntime(tab).frame?.back();
+						}}
 					>
 						<span class="material-symbols-outlined">arrow_back</span>
 					</button>
@@ -221,7 +256,10 @@ export const Omnibox: Component = function (cx) {
 						class="nav-btn"
 						aria-label="Go forward"
 						title="Go forward"
-						on:click={() => getActiveBrowserTab()?.frame?.forward()}
+						on:click={() => {
+							const tab = getActiveBrowserTab();
+							if (tab) getBrowserTabRuntime(tab).frame?.forward();
+						}}
 					>
 						<span class="material-symbols-outlined">arrow_forward</span>
 					</button>
@@ -230,7 +268,10 @@ export const Omnibox: Component = function (cx) {
 						class="nav-btn"
 						aria-label="Reload page"
 						title="Reload page"
-						on:click={() => getActiveBrowserTab()?.frame?.reload()}
+						on:click={() => {
+							const tab = getActiveBrowserTab();
+							if (tab) getBrowserTabRuntime(tab).frame?.reload();
+						}}
 					>
 						<span class="material-symbols-outlined">refresh</span>
 					</button>
@@ -381,23 +422,31 @@ const BrowserView: Component<
 		browserState.activeTabId = tab.id;
 		browserState.url = tab.url;
 		for (const current of browserState.tabs) {
-			current.element.style.display = current.id === tab.id ? "block" : "none";
+			const runtime = getBrowserTabRuntime(current);
+			runtime.element.style.display = current.id === tab.id ? "block" : "none";
 		}
-		if (tab.frame) browserState.frame = tab.frame;
+		const runtime = getBrowserTabRuntime(tab);
+		if (runtime.frame) browserState.frame = runtime.frame;
 	};
 
 	const removeTabFrame = (tab: BrowserTab) => {
-		tab.element.remove();
-		if (!tab.frame) return;
-		const frameIndex = controller.frames.indexOf(tab.frame);
+		const runtime = getBrowserTabRuntime(tab);
+		runtime.element.remove();
+		if (!runtime.frame) {
+			browserTabRuntime.delete(tab.id);
+			return;
+		}
+		const frameIndex = controller.frames.indexOf(runtime.frame);
 		if (frameIndex >= 0) controller.frames.splice(frameIndex, 1);
+		browserTabRuntime.delete(tab.id);
 	};
 
 	const sendHomepageError = (tab: BrowserTab, message: string) => {
-		tab.element.contentWindow?.postMessage(
+		const runtime = getBrowserTabRuntime(tab);
+		runtime.element.contentWindow?.postMessage(
 			{
 				type: "scramjet-homepage-error",
-				token: tab.token,
+				token: runtime.token,
 				message,
 			},
 			"*"
@@ -405,8 +454,9 @@ const BrowserView: Component<
 	};
 
 	const mountTab = (tab: BrowserTab, goto?: string | null) => {
-		tab.element.style.display = browserState.activeTabId === tab.id ? "block" : "none";
-		this.frameContainer.appendChild(tab.element);
+		const runtime = getBrowserTabRuntime(tab);
+		runtime.element.style.display = browserState.activeTabId === tab.id ? "block" : "none";
+		this.frameContainer.appendChild(runtime.element);
 		const urlWatcher = new UrlWatcherPlugin((url) => {
 			if (!browserState.tabs.some((current) => current.id === tab.id)) return;
 			tab.url = url;
@@ -420,19 +470,19 @@ const BrowserView: Component<
 		const catchEscapedLinks = new CatchEscapedLinksPlugin(
 			(url) => new URL(`/?goto=${encodeURIComponent(url.href)}`, location.origin)
 		);
-		tab.frame = controller.createFrame(tab.element, {
+		runtime.frame = controller.createFrame(runtime.element, {
 			plugins: [cachePlugin, urlWatcher, catchEscapedLinks],
 		});
 		browserState.tabs = [...browserState.tabs];
-		if (browserState.activeTabId === tab.id) browserState.frame = tab.frame;
+		if (browserState.activeTabId === tab.id) browserState.frame = runtime.frame;
 
-		tab.element.addEventListener(
+		runtime.element.addEventListener(
 			"load",
 			() => {
-				tab.element.contentWindow?.postMessage(
+				runtime.element.contentWindow?.postMessage(
 					{
 						type: "scramjet-homepage-init",
-						token: tab.token,
+						token: runtime.token,
 						settings: preferences,
 						runtimeSettings: {
 							wispUrl: demoSettingsStore.wispUrl,
@@ -445,7 +495,7 @@ const BrowserView: Component<
 					"*"
 				);
 				if (goto) {
-					tab.frame?.go(goto);
+					navigateBrowserTab(tab, goto);
 					history.replaceState(null, "", location.href.split("?")[0]);
 				}
 			},
@@ -453,8 +503,8 @@ const BrowserView: Component<
 		);
 
 		setTabZoom(tab, tab.zoom);
-		tab.element.src = `data:text/html;base64,${encodeBase64(
-			homepageSource.replaceAll("{{PREFERENCE_TOKEN}}", tab.token)
+		runtime.element.src = `data:text/html;base64,${encodeBase64(
+			homepageSource.replaceAll("{{PREFERENCE_TOKEN}}", runtime.token)
 		)}`;
 	};
 
@@ -494,8 +544,10 @@ const BrowserView: Component<
 
 		window.addEventListener("message", (event: MessageEvent<unknown>) => {
 			if (!isRecord(event.data)) return;
-			const tab = browserState.tabs.find((current) => current.element.contentWindow === event.source);
-			if (!tab || event.data.token !== tab.token) return;
+			const tab = browserState.tabs.find(
+				(current) => browserTabRuntime.get(current.id)?.element.contentWindow === event.source
+			);
+			if (!tab || event.data.token !== getBrowserTabRuntime(tab).token) return;
 
 			if (event.data.type === "scramjet-homepage-navigate") {
 				if (typeof event.data.query !== "string") {
@@ -507,15 +559,13 @@ const BrowserView: Component<
 				if (!query) return;
 				try {
 					const destination = getNavigationDestination(query);
-					tab.url = destination;
-					tab.isHomepage = false;
-					browserState.tabs = [...browserState.tabs];
-					browserState.url = destination;
-					demoSettingsStore.homeUrl = destination;
-					tab.frame?.go(destination);
+					navigateBrowserTab(tab, destination);
 				} catch (error) {
-					console.error("Unable to parse the homepage address.", error);
-					sendHomepageError(tab, "That web address is not valid.");
+					console.error("Unable to navigate from the homepage.", error);
+					sendHomepageError(
+						tab,
+						error instanceof Error ? error.message : "Unable to open that address."
+					);
 				}
 				return;
 			}
@@ -552,10 +602,11 @@ const BrowserView: Component<
 						controller.setTransport(getTransport());
 					}
 
-					tab.element.contentWindow?.postMessage(
+					const runtime = getBrowserTabRuntime(tab);
+					runtime.element.contentWindow?.postMessage(
 						{
 							type: "scramjet-homepage-runtime-settings-saved",
-							token: tab.token,
+							token: runtime.token,
 							settings: {
 								wispUrl: nextWispUrl,
 								transport: nextTransport,
