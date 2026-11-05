@@ -188,6 +188,7 @@
 				align-items: center;
 				gap: clamp(42px, 10vh, 68px);
 				padding: 24px 0;
+				animation: homepage-enter 520ms cubic-bezier(0.2, 0.75, 0.35, 1) both;
 			}
 
 			h1 {
@@ -198,6 +199,7 @@
 				letter-spacing: 0.02em;
 				line-height: 1;
 				text-shadow: 0 0 18px rgb(255 255 255 / 22%);
+				animation: homepage-enter 620ms cubic-bezier(0.2, 0.75, 0.35, 1) both;
 			}
 
 			.search-hint {
@@ -214,6 +216,7 @@
 					border-color 180ms ease,
 					box-shadow 180ms ease,
 					color 180ms ease;
+				animation: homepage-enter 680ms 70ms cubic-bezier(0.2, 0.75, 0.35, 1) both;
 			}
 
 			.search-hint:hover,
@@ -263,12 +266,18 @@
 				font: inherit;
 				font-size: 1.15rem;
 				cursor: pointer;
+				transition:
+					transform 180ms ease,
+					border-color 180ms ease,
+					color 180ms ease;
+				animation: settings-enter 400ms 250ms ease-out both;
 			}
 
 			.settings-button:hover,
 			.settings-button:focus-visible {
 				border-color: var(--accent);
 				color: var(--accent);
+				transform: rotate(30deg);
 			}
 
 			.settings-dialog {
@@ -392,7 +401,37 @@
 				text-align: left;
 			}
 
+			@keyframes homepage-enter {
+				from {
+					opacity: 0;
+					transform: translateY(10px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			@keyframes settings-enter {
+				from {
+					opacity: 0;
+					transform: scale(0.82);
+				}
+				to {
+					opacity: 1;
+					transform: scale(1);
+				}
+			}
+
 			@media (prefers-reduced-motion: reduce) {
+				main,
+				h1,
+				.search-hint,
+				.settings-button {
+					animation: none;
+					transition: none;
+				}
+
 				.search-hint {
 					transition: none;
 				}

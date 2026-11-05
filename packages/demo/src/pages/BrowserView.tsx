@@ -130,7 +130,7 @@ export function getNavigationDestination(query: string): string {
 		return new URL(`https://${query}`).toString();
 	}
 
-	return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+	return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
 }
 
 function getActiveBrowserTab(): BrowserTab | undefined {
@@ -313,10 +313,15 @@ Omnibox.style = css`
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		transition:
+			background-color 150ms ease,
+			color 150ms ease,
+			transform 150ms ease;
 	}
 	.nav-btn:hover {
 		background: var(--chrome-hover);
 		color: var(--chrome-text);
+		transform: translateY(-1px);
 	}
 	.browser-omnibox-shell .material-symbols-outlined {
 		font-size: 15px !important;
@@ -351,6 +356,12 @@ Omnibox.style = css`
 		font: inherit;
 		font-size: 0.76em;
 		cursor: pointer;
+		transition:
+			background-color 150ms ease,
+			border-color 150ms ease;
+	}
+	.zoom-select:hover {
+		border-color: var(--chrome-accent);
 	}
 `;
 
@@ -696,11 +707,18 @@ BrowserView.style = css`
 		border-radius: 9px 9px 0 0;
 		background: var(--chrome-surface);
 		color: var(--chrome-muted);
+		transition:
+			background-color 170ms ease,
+			color 170ms ease,
+			border-color 170ms ease,
+			transform 170ms ease;
+		animation: tab-enter 180ms ease-out both;
 	}
 	.chrome-tab.active {
 		background: var(--chrome-active);
 		color: var(--chrome-text);
 		border-color: var(--chrome-border);
+		transform: translateY(-1px);
 	}
 	.chrome-tab-title {
 		display: flex;
@@ -741,6 +759,10 @@ BrowserView.style = css`
 		background: transparent;
 		color: var(--chrome-muted);
 		cursor: pointer;
+		transition:
+			background-color 150ms ease,
+			color 150ms ease,
+			transform 150ms ease;
 	}
 	.chrome-tab-close .material-symbols-outlined,
 	.new-tab-button .material-symbols-outlined {
@@ -754,6 +776,9 @@ BrowserView.style = css`
 	.new-tab-button {
 		margin: 0 0 5px 1px;
 	}
+	.new-tab-button:hover {
+		transform: rotate(90deg);
+	}
 	.browser-frame-container {
 		display: flex;
 		flex: 1;
@@ -766,6 +791,39 @@ BrowserView.style = css`
 		display: block;
 		flex: none;
 		border: none;
+	}
+	iframe[style*="display: block"] {
+		animation: frame-enter 220ms ease-out both;
+	}
+	@keyframes tab-enter {
+		from {
+			opacity: 0;
+			transform: translateY(5px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes frame-enter {
+		from {
+			opacity: 0.82;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.chrome-tab,
+		.nav-btn,
+		.zoom-select,
+		.chrome-tab-close,
+		.new-tab-button,
+		iframe[style*="display: block"] {
+			animation: none;
+			transition: none;
+			transform: none;
+		}
 	}
 `;
 
