@@ -73,7 +73,7 @@ type HomepageTheme = (typeof HOMEPAGE_THEMES)[number];
 
 const TAB_CLOAKS = {
 	none: { title: "/isle", icon: "/isle-logo.svg" },
-	gmail: { title: "Gmail", icon: "https://mail.google.com/favicon.ico" },
+	gmail: { title: "Gmail", icon: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Gmail_icon_%282026%29.svg/960px-Gmail_icon_%282026%29.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail&_=20260520102616" },
 	coursera: {
 		title: "Coursera",
 		icon: "https://www.coursera.org/favicon.ico",
