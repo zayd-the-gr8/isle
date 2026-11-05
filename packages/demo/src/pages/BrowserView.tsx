@@ -32,7 +32,7 @@ const browserTabRuntime = new Map<number, BrowserTabRuntime>();
 function createBrowserTab(): BrowserTab {
 	const tab = {
 		id: nextTabId++,
-		url: demoSettingsStore.homeUrl,
+		url: "",
 		isHomepage: true,
 		zoom: 100,
 	};
@@ -47,7 +47,7 @@ function createBrowserTab(): BrowserTab {
 const initialBrowserTab = createBrowserTab();
 
 export const browserState = createState({
-	url: demoSettingsStore.homeUrl,
+	url: "",
 	frame: null! as Frame,
 	tabs: [initialBrowserTab],
 	activeTabId: initialBrowserTab.id,
@@ -72,7 +72,7 @@ const HOMEPAGE_THEMES = [
 type HomepageTheme = (typeof HOMEPAGE_THEMES)[number];
 
 const TAB_CLOAKS = {
-	none: { title: "Scramjet Demo", icon: "/icon.png" },
+	none: { title: "/isle", icon: "/isle-logo.svg" },
 	gmail: { title: "Gmail", icon: "https://mail.google.com/favicon.ico" },
 	coursera: {
 		title: "Coursera",
@@ -164,7 +164,6 @@ function navigateBrowserTab(tab: BrowserTab, destination: string) {
 	browserState.tabs = [...browserState.tabs];
 	if (browserState.activeTabId === tab.id) {
 		browserState.url = destination;
-		demoSettingsStore.homeUrl = destination;
 	}
 }
 
@@ -464,7 +463,6 @@ const BrowserView: Component<
 			browserState.tabs = [...browserState.tabs];
 			if (browserState.activeTabId === tab.id) {
 				browserState.url = url;
-				demoSettingsStore.homeUrl = url;
 			}
 		});
 		const catchEscapedLinks = new CatchEscapedLinksPlugin(
@@ -782,6 +780,7 @@ BrowserView.style = css`
 		background: transparent;
 		color: inherit;
 		font: inherit;
+		font-family: "Bitcount Grid Single", system-ui, sans-serif;
 		font-size: 0.78em;
 		text-align: left;
 		cursor: pointer;
