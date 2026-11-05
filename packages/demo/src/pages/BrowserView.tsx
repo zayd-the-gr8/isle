@@ -118,6 +118,20 @@ function getHomepageDestination(query: string): string {
 	return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
 }
 
+function encodeBase64(value: string): string {
+	const bytes = new TextEncoder().encode(value);
+	let binary = "";
+	const chunkSize = 0x8000;
+
+	for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+		binary += String.fromCharCode(
+			...bytes.subarray(offset, offset + chunkSize)
+		);
+	}
+
+	return btoa(binary);
+}
+
 function applyTabCloak(cloak: TabCloak) {
 	const selectedCloak = TAB_CLOAKS[cloak];
 	document.title = selectedCloak.title;
@@ -408,7 +422,7 @@ const BrowserView: Component<
 			"{{PREFERENCE_TOKEN}}",
 			messageToken
 		);
-		this.frameel.src = `data:text/html;base64,${btoa(realHomepage)}`;
+		this.frameel.src = `data:text/html;base64,${encodeBase64(realHomepage)}`;
 
 		let goto = new URL(location.href).searchParams.get("goto");
 		if (goto) {
