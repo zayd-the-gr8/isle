@@ -1,16 +1,15 @@
-import {
-	css,
-	type Delegate,
-	type Component,
-	createState,
-} from "dreamland/core";
-import {
-	CatchEscapedLinksPlugin,
-	UrlWatcherPlugin,
-} from "@mercuryworkshop/scramjet-utils";
+import { css, type Delegate, type Component, createState } from "dreamland/core";
+import { CatchEscapedLinksPlugin, UrlWatcherPlugin } from "@mercuryworkshop/scramjet-utils";
 import { versionInfo } from "@mercuryworkshop/scramjet";
-import { cachePlugin, controller } from "..";
-import { demoSettingsStore } from "../store";
+import { cachePlugin, controller, getTransport } from "..";
+import {
+	demoSettingsDefaults,
+	demoSettingsStore,
+	normalizeHomeUrl,
+	normalizeMaxRequests,
+	normalizeTransport,
+	normalizeWispUrl,
+} from "../store";
 import homepage from "./homepage.html?raw";
 import type { Frame } from "@mercuryworkshop/scramjet-controller";
 
@@ -66,10 +65,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isHomepageTheme(value: unknown): value is HomepageTheme {
-	return (
-		typeof value === "string" &&
-		HOMEPAGE_THEMES.some((theme) => theme === value)
-	);
+	return typeof value === "string" && HOMEPAGE_THEMES.some((theme) => theme === value);
 }
 
 function isTabCloak(value: unknown): value is TabCloak {
@@ -83,18 +79,12 @@ function readHomepagePreferences(): HomepagePreferences {
 
 		const parsed: unknown = JSON.parse(raw);
 		if (!isRecord(parsed)) {
-			throw new TypeError(
-				"Saved homepage preferences are not an object."
-			);
+			throw new TypeError("Saved homepage preferences are not an object.");
 		}
 
 		return {
-			theme: isHomepageTheme(parsed.theme)
-				? parsed.theme
-				: DEFAULT_HOMEPAGE_PREFERENCES.theme,
-			cloak: isTabCloak(parsed.cloak)
-				? parsed.cloak
-				: DEFAULT_HOMEPAGE_PREFERENCES.cloak,
+			theme: isHomepageTheme(parsed.theme) ? parsed.theme : DEFAULT_HOMEPAGE_PREFERENCES.theme,
+			cloak: isTabCloak(parsed.cloak) ? parsed.cloak : DEFAULT_HOMEPAGE_PREFERENCES.cloak,
 		};
 	} catch (error) {
 		console.error("Unable to load saved homepage preferences.", error);
@@ -102,20 +92,16 @@ function readHomepagePreferences(): HomepagePreferences {
 	}
 }
 
-function getHomepageDestination(query: string): string {
+export function getNavigationDestination(query: string): string {
 	if (/^https?:\/\//i.test(query)) {
 		return new URL(query).toString();
 	}
 
-	if (
-		/^(?:localhost|(?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z]{2,})(?::\d{1,5})?(?:[/?#]\S*)?$/i.test(
-			query
-		)
-	) {
+	if (/^(?:localhost|(?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z]{2,})(?::\d{1,5})?(?:[/?#]\S*)?$/i.test(query)) {
 		return new URL(`https://${query}`).toString();
 	}
 
-	return `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+	return `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
 }
 
 function encodeBase64(value: string): string {
@@ -124,9 +110,7 @@ function encodeBase64(value: string): string {
 	const chunkSize = 0x8000;
 
 	for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-		binary += String.fromCharCode(
-			...bytes.subarray(offset, offset + chunkSize)
-		);
+		binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
 	}
 
 	return btoa(binary);
@@ -135,8 +119,7 @@ function encodeBase64(value: string): string {
 function applyTabCloak(cloak: TabCloak) {
 	const selectedCloak = TAB_CLOAKS[cloak];
 	document.title = selectedCloak.title;
-	const favicon =
-		document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+	const favicon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
 	if (!favicon) {
 		throw new Error("The document is missing its favicon link.");
 	}
@@ -145,11 +128,16 @@ function applyTabCloak(cloak: TabCloak) {
 
 export const Omnibox: Component = function (cx) {
 	const navigate = () => {
-		if (!browserState.url.startsWith("http")) {
-			browserState.url = `https://${browserState.url}`;
+		const query = browserState.url.trim();
+		if (!query) return;
+
+		try {
+			browserState.url = getNavigationDestination(query);
+			demoSettingsStore.homeUrl = browserState.url;
+			browserState.frame?.go(browserState.url);
+		} catch (error) {
+			console.error("Unable to parse the browser address.", error);
 		}
-		demoSettingsStore.homeUrl = browserState.url;
-		browserState.frame?.go(browserState.url);
 	};
 	return (
 		<form
@@ -161,29 +149,13 @@ export const Omnibox: Component = function (cx) {
 		>
 			<div class="browser-omnibox-shell">
 				<div class="omnibox-nav" aria-hidden="true">
-					<button
-						type="button"
-						class="nav-btn"
-						on:click={() => browserState.frame?.back()}
-					>
-						<span class="material-symbols-outlined">
-							arrow_back
-						</span>
+					<button type="button" class="nav-btn" on:click={() => browserState.frame?.back()}>
+						<span class="material-symbols-outlined">arrow_back</span>
 					</button>
-					<button
-						type="button"
-						class="nav-btn"
-						on:click={() => browserState.frame?.forward()}
-					>
-						<span class="material-symbols-outlined">
-							arrow_forward
-						</span>
+					<button type="button" class="nav-btn" on:click={() => browserState.frame?.forward()}>
+						<span class="material-symbols-outlined">arrow_forward</span>
 					</button>
-					<button
-						type="button"
-						class="nav-btn"
-						on:click={() => browserState.frame?.reload()}
-					>
+					<button type="button" class="nav-btn" on:click={() => browserState.frame?.reload()}>
 						<span class="material-symbols-outlined">refresh</span>
 					</button>
 				</div>
@@ -192,6 +164,9 @@ export const Omnibox: Component = function (cx) {
 					class="url-input"
 					type="text"
 					value={use(browserState.url)}
+					on:input={(event: InputEvent) => {
+						browserState.url = (event.target as HTMLInputElement).value;
+					}}
 					spellcheck="false"
 					placeholder="Enter URL or search..."
 				/>
@@ -285,11 +260,7 @@ const BrowserView: Component<
 			browserState.url = url;
 		});
 		let catchEscapedLinks = new CatchEscapedLinksPlugin(
-			(url) =>
-				new URL(
-					`/?goto=${encodeURIComponent(url.href)}`,
-					location.origin
-				)
+			(url) => new URL(`/?goto=${encodeURIComponent(url.href)}`, location.origin)
 		);
 		browserState.frame = controller.createFrame(this.frameel, {
 			plugins: [cachePlugin, urlWatcher, catchEscapedLinks],
@@ -308,23 +279,19 @@ const BrowserView: Component<
 
 			if (event.data.type === "scramjet-homepage-navigate") {
 				if (typeof event.data.query !== "string") {
-					console.warn(
-						"Ignoring homepage navigation without a search query."
-					);
+					console.warn("Ignoring homepage navigation without a search query.");
 					return;
 				}
 
 				const query = event.data.query.trim();
 				if (!query) return;
-
-				let destination: string;
 				try {
-					destination = getHomepageDestination(query);
+					const destination = getNavigationDestination(query);
+					browserState.url = destination;
+					demoSettingsStore.homeUrl = destination;
+					browserState.frame?.go(destination);
 				} catch (error) {
-					console.error(
-						"Unable to parse the homepage address.",
-						error
-					);
+					console.error("Unable to parse the homepage address.", error);
 					this.frameel.contentWindow?.postMessage(
 						{
 							type: "scramjet-homepage-error",
@@ -333,29 +300,89 @@ const BrowserView: Component<
 						},
 						"*"
 					);
+				}
+				return;
+			}
+
+			if (event.data.type === "scramjet-homepage-open-requests") {
+				window.dispatchEvent(new Event("scramjet-demo-open-requests"));
+				return;
+			}
+
+			if (event.data.type === "scramjet-homepage-open-dev-options") {
+				window.dispatchEvent(new Event("scramjet-demo-open-dev-options"));
+				return;
+			}
+
+			if (event.data.type === "scramjet-homepage-runtime-settings") {
+				if (!isRecord(event.data.settings)) {
+					this.frameel.contentWindow?.postMessage(
+						{
+							type: "scramjet-homepage-error",
+							token: messageToken,
+							message: "Settings could not be read.",
+						},
+						"*"
+					);
 					return;
 				}
 
-				browserState.url = destination;
-				demoSettingsStore.homeUrl = destination;
-				browserState.frame?.go(destination);
+				try {
+					const nextWispUrl = normalizeWispUrl(String(event.data.settings.wispUrl ?? ""));
+					const nextTransport = normalizeTransport(String(event.data.settings.transport ?? ""));
+					const nextHomeUrl = normalizeHomeUrl(String(event.data.settings.homeUrl ?? ""));
+					const nextMaxRequests = normalizeMaxRequests(String(event.data.settings.maxRequests ?? ""));
+					const transportChanged =
+						nextWispUrl !== demoSettingsStore.wispUrl || nextTransport !== demoSettingsStore.transport;
+
+					demoSettingsStore.wispUrl = nextWispUrl;
+					demoSettingsStore.transport = nextTransport;
+					demoSettingsStore.homeUrl = nextHomeUrl;
+					demoSettingsStore.maxRequests = nextMaxRequests;
+					if (transportChanged) {
+						controller.setTransport(getTransport());
+					}
+
+					this.frameel.contentWindow?.postMessage(
+						{
+							type: "scramjet-homepage-runtime-settings-saved",
+							token: messageToken,
+							settings: {
+								wispUrl: nextWispUrl,
+								transport: nextTransport,
+								homeUrl: nextHomeUrl,
+								maxRequests: nextMaxRequests,
+							},
+							statusMessage:
+								event.data.statusMessage === "Defaults restored."
+									? "Defaults restored."
+									: "Settings saved.",
+						},
+						"*"
+					);
+				} catch (error) {
+					console.error("Unable to apply demo settings.", error);
+					this.frameel.contentWindow?.postMessage(
+						{
+							type: "scramjet-homepage-error",
+							token: messageToken,
+							message: error instanceof Error ? error.message : "Failed to apply settings.",
+						},
+						"*"
+					);
+				}
 				return;
 			}
 
 			if (event.data.type !== "scramjet-homepage-settings") return;
 			const nextSettings = event.data.settings;
-			if (
-				!isRecord(nextSettings) ||
-				!isHomepageTheme(nextSettings.theme) ||
-				!isTabCloak(nextSettings.cloak)
-			) {
+			if (!isRecord(nextSettings) || !isHomepageTheme(nextSettings.theme) || !isTabCloak(nextSettings.cloak)) {
 				console.warn("Ignoring invalid homepage settings message.");
 				this.frameel.contentWindow?.postMessage(
 					{
 						type: "scramjet-homepage-error",
 						token: messageToken,
-						message:
-							"Invalid settings. Please choose an option from each list.",
+						message: "Invalid settings. Please choose an option from each list.",
 					},
 					"*"
 				);
@@ -371,18 +398,14 @@ const BrowserView: Component<
 			applyTabCloak(updatedPreferences.cloak);
 
 			try {
-				localStorage.setItem(
-					HOMEPAGE_PREFERENCES_KEY,
-					JSON.stringify(updatedPreferences)
-				);
+				localStorage.setItem(HOMEPAGE_PREFERENCES_KEY, JSON.stringify(updatedPreferences));
 			} catch (error) {
 				console.error("Unable to save homepage preferences.", error);
 				this.frameel.contentWindow?.postMessage(
 					{
 						type: "scramjet-homepage-error",
 						token: messageToken,
-						message:
-							"Settings applied, but could not be saved in this browser.",
+						message: "Settings applied, but could not be saved in this browser.",
 					},
 					"*"
 				);
@@ -396,6 +419,13 @@ const BrowserView: Component<
 						type: "scramjet-homepage-init",
 						token: messageToken,
 						settings: preferences,
+						runtimeSettings: {
+							wispUrl: demoSettingsStore.wispUrl,
+							transport: demoSettingsStore.transport,
+							homeUrl: demoSettingsStore.homeUrl,
+							maxRequests: demoSettingsStore.maxRequests,
+						},
+						runtimeDefaults: demoSettingsDefaults,
 					},
 					"*"
 				);
@@ -403,14 +433,8 @@ const BrowserView: Component<
 			{ once: true }
 		);
 		let realHomepage = homepage;
-		realHomepage = realHomepage.replaceAll(
-			"{{SCRAMJET_VERSION}}",
-			String(versionInfo.version)
-		);
-		realHomepage = realHomepage.replaceAll(
-			"{{SCRAMJET_BUILD}}",
-			String(versionInfo.build)
-		);
+		realHomepage = realHomepage.replaceAll("{{SCRAMJET_VERSION}}", String(versionInfo.version));
+		realHomepage = realHomepage.replaceAll("{{SCRAMJET_BUILD}}", String(versionInfo.build));
 		realHomepage = realHomepage.replaceAll(
 			"{{SCRAMJET_DATE_PRETTY}}",
 			new Date(versionInfo.date).toLocaleString(undefined, {
@@ -418,10 +442,7 @@ const BrowserView: Component<
 				timeStyle: "short",
 			})
 		);
-		realHomepage = realHomepage.replaceAll(
-			"{{PREFERENCE_TOKEN}}",
-			messageToken
-		);
+		realHomepage = realHomepage.replaceAll("{{PREFERENCE_TOKEN}}", messageToken);
 		this.frameel.src = `data:text/html;base64,${encodeBase64(realHomepage)}`;
 
 		let goto = new URL(location.href).searchParams.get("goto");
@@ -432,11 +453,7 @@ const BrowserView: Component<
 	};
 
 	return (
-		<div
-			class={use(this.active).map(
-				(active) => `tab-panel browser-view ${active ? "active" : ""}`
-			)}
-		>
+		<div class={use(this.active).map((active) => `tab-panel browser-view ${active ? "active" : ""}`)}>
 			<iframe this={use(this.frameel)}></iframe>
 		</div>
 	);

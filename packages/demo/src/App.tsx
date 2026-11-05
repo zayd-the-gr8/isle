@@ -1,28 +1,33 @@
 import { css, createDelegate, type Component } from "dreamland/core";
 import type { Frame } from "@mercuryworkshop/scramjet-controller";
+import FlagEditor from "./components/FlagEditor";
 import BrowserView from "./pages/BrowserView";
 import RequestViewer from "./pages/RequestViewer";
 import PlaygroundView from "./pages/Playground";
-import SettingsView from "./pages/SettingsPage";
 import { Omnibox } from "./pages/BrowserView";
-import { requestsState } from "./pages/RequestViewer";
 
 const App: Component<
 	{},
 	{},
 	{
-		activeTab: "browser" | "requests" | "playground" | "settings";
+		activeTab: "browser" | "playground" | "requests" | "dev-options";
 	}
 > = function (cx) {
 	this.activeTab ??= "browser";
+	cx.mount = () => {
+		window.addEventListener("scramjet-demo-open-requests", () => {
+			this.activeTab = "requests";
+		});
+		window.addEventListener("scramjet-demo-open-dev-options", () => {
+			this.activeTab = "dev-options";
+		});
+	};
 	return (
 		<div>
 			<div class="top-bar">
 				<div class="tab-bar">
 					<button
-						class={use(this.activeTab).map(
-							(tab) => `tab-button ${tab === "browser" ? "active" : ""}`
-						)}
+						class={use(this.activeTab).map((tab) => `tab-button ${tab === "browser" ? "active" : ""}`)}
 						on:click={() => {
 							this.activeTab = "browser";
 						}}
@@ -30,37 +35,12 @@ const App: Component<
 						Browser
 					</button>
 					<button
-						class={use(this.activeTab).map(
-							(tab) => `tab-button ${tab === "requests" ? "active" : ""}`
-						)}
-						on:click={() => {
-							this.activeTab = "requests";
-						}}
-					>
-						Requests{" "}
-						{use(requestsState.requests).map((requests) =>
-							requests.length ? `(${requests.length})` : ""
-						)}
-					</button>
-					<button
-						class={use(this.activeTab).map(
-							(tab) => `tab-button ${tab === "playground" ? "active" : ""}`
-						)}
+						class={use(this.activeTab).map((tab) => `tab-button ${tab === "playground" ? "active" : ""}`)}
 						on:click={() => {
 							this.activeTab = "playground";
 						}}
 					>
 						Playground
-					</button>
-					<button
-						class={use(this.activeTab).map(
-							(tab) => `tab-button ${tab === "settings" ? "active" : ""}`
-						)}
-						on:click={() => {
-							this.activeTab = "settings";
-						}}
-					>
-						Settings
 					</button>
 					{use(this.activeTab)
 						.map((tab) => tab === "browser")
@@ -68,42 +48,44 @@ const App: Component<
 				</div>
 			</div>
 			<div
-				class={use(this.activeTab).map(
-					(tab) =>
-						`tab-panel browser-panel ${tab === "browser" ? "active" : ""}`
-				)}
+				class={use(this.activeTab).map((tab) => `tab-panel browser-panel ${tab === "browser" ? "active" : ""}`)}
 			>
-				<BrowserView
-					active={use(this.activeTab).map((tab) => tab === "browser")}
-				/>
+				<BrowserView active={use(this.activeTab).map((tab) => tab === "browser")} />
 			</div>
 			<div
 				class={use(this.activeTab).map(
-					(tab) =>
-						`tab-panel requests-panel ${tab === "requests" ? "active" : ""}`
+					(tab) => `tab-panel requests-panel ${tab === "requests" ? "active" : ""}`
 				)}
 			>
-				<RequestViewer
-					active={use(this.activeTab).map((tab) => tab === "requests")}
-				/>
+				<RequestViewer active={use(this.activeTab).map((tab) => tab === "requests")} />
 			</div>
 			<div
 				class={use(this.activeTab).map(
-					(tab) =>
-						`tab-panel playground-panel ${tab === "playground" ? "active" : ""}`
+					(tab) => `tab-panel playground-panel ${tab === "playground" ? "active" : ""}`
 				)}
 			>
-				<PlaygroundView
-					active={use(this.activeTab).map((tab) => tab === "playground")}
-				/>
+				<PlaygroundView active={use(this.activeTab).map((tab) => tab === "playground")} />
 			</div>
 			<div
 				class={use(this.activeTab).map(
-					(tab) =>
-						`tab-panel settings-tab ${tab === "settings" ? "active" : ""}`
+					(tab) => `tab-panel dev-options-panel ${tab === "dev-options" ? "active" : ""}`
 				)}
 			>
-				<SettingsView />
+				<div class="dev-options-content">
+					<div class="dev-options-heading">
+						<h1>Dev options</h1>
+						<button
+							type="button"
+							class="tab-button"
+							on:click={() => {
+								this.activeTab = "browser";
+							}}
+						>
+							Back to browser
+						</button>
+					</div>
+					<FlagEditor embedded={true} />
+				</div>
 			</div>
 		</div>
 	);
@@ -194,12 +176,33 @@ App.style = css`
 	.requests-panel {
 		flex-direction: column;
 	}
-	.playground-panel {
-		width: 100%;
-		min-width: 0;
-		min-height: 0;
+	.dev-options-panel {
+		overflow: auto;
+		background: #0f0f0f;
+		color: #e5e7eb;
+		font-family:
+			system-ui,
+			-apple-system,
+			"Segoe UI",
+			sans-serif;
 	}
-	.settings-tab {
+	.dev-options-content {
+		width: min(900px, 100%);
+		margin: 0 auto;
+		padding: 18px;
+	}
+	.dev-options-heading {
+		display: flex;
+		margin-bottom: 16px;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	.dev-options-heading h1 {
+		margin: 0;
+		font-size: 1.1rem;
+	}
+	.playground-panel {
 		width: 100%;
 		min-width: 0;
 		min-height: 0;

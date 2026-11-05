@@ -39,16 +39,8 @@
 				background-color: var(--page-bg);
 				background-image:
 					linear-gradient(var(--grid-line) 1px, transparent 1px),
-					linear-gradient(
-						90deg,
-						var(--grid-line) 1px,
-						transparent 1px
-					),
-					radial-gradient(
-						ellipse at center,
-						var(--glow) 0,
-						var(--page-bg) 78%
-					);
+					linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+					radial-gradient(ellipse at center, var(--glow) 0, var(--page-bg) 78%);
 				background-size:
 					32px 32px,
 					32px 32px,
@@ -285,6 +277,7 @@
 				width: min(320px, calc(100vw - 36px));
 				max-width: none;
 				max-height: min(80vh, 500px);
+				overflow-y: auto;
 				margin: 0;
 				padding: 20px;
 				border: 1px solid var(--field-border);
@@ -330,7 +323,8 @@
 				font-size: 0.88rem;
 			}
 
-			.setting select {
+			.setting select,
+			.setting input {
 				width: 100%;
 				min-height: 40px;
 				padding: 6px 10px;
@@ -347,6 +341,55 @@
 				margin: 14px 0 0;
 				color: var(--muted);
 				font-size: 0.72rem;
+			}
+
+			.setting-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 16px;
+			}
+
+			.setting-actions button,
+			.dev-options button {
+				min-height: 36px;
+				padding: 6px 12px;
+				border: 1px solid var(--field-border);
+				border-radius: 6px;
+				background: var(--field-bg);
+				color: var(--text);
+				font: inherit;
+				font-size: 0.78rem;
+				cursor: pointer;
+			}
+
+			.setting-actions button:hover,
+			.dev-options button:hover {
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+
+			.dev-options {
+				margin-top: 18px;
+				border-top: 1px solid var(--field-border);
+			}
+
+			.dev-options summary {
+				padding: 14px 0 4px;
+				color: var(--text);
+				font-size: 0.88rem;
+				cursor: pointer;
+			}
+
+			.dev-actions {
+				display: grid;
+				gap: 8px;
+				padding-top: 12px;
+			}
+
+			.dev-actions button {
+				width: 100%;
+				text-align: left;
 			}
 
 			@media (prefers-reduced-motion: reduce) {
@@ -371,51 +414,24 @@
 				/>
 			</form>
 		</main>
-		<button
-			class="settings-button"
-			id="settings-button"
-			type="button"
-			aria-label="Settings"
-			title="Settings"
-		>
+		<button class="settings-button" id="settings-button" type="button" aria-label="Settings" title="Settings">
 			⚙
 		</button>
-		<dialog
-			class="settings-dialog"
-			id="settings-dialog"
-			aria-labelledby="settings-title"
-		>
+		<dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
 			<div class="settings-header">
 				<h2 id="settings-title">Settings</h2>
-				<button
-					class="close-settings"
-					id="close-settings"
-					type="button"
-					aria-label="Close settings"
-				>
-					×
-				</button>
+				<button class="close-settings" id="close-settings" type="button" aria-label="Close settings">×</button>
 			</div>
 			<label class="setting" for="theme-select">
 				Appearance
 				<select id="theme-select">
 					<option value="stark-night">Stark Night · Dark</option>
 					<option value="stark-day">Stark Day · Light</option>
-					<option value="captain-night">
-						Captain America · Navy · Dark
-					</option>
-					<option value="captain-day">
-						Captain America · Navy · Light
-					</option>
-					<option value="wanda-night">
-						Scarlet Witch · Pink · Dark
-					</option>
-					<option value="wanda-day">
-						Scarlet Witch · Pink · Light
-					</option>
-					<option value="spider-night">
-						Spider-Man · Red · Dark
-					</option>
+					<option value="captain-night">Captain America · Navy · Dark</option>
+					<option value="captain-day">Captain America · Navy · Light</option>
+					<option value="wanda-night">Scarlet Witch · Pink · Dark</option>
+					<option value="wanda-day">Scarlet Witch · Pink · Light</option>
+					<option value="spider-night">Spider-Man · Red · Dark</option>
 					<option value="spider-day">Spider-Man · Red · Light</option>
 					<option value="hulk-night">Hulk · Green · Dark</option>
 					<option value="hulk-day">Hulk · Green · Light</option>
@@ -433,7 +449,52 @@
 					<option value="clever">Clever</option>
 				</select>
 			</label>
+			<label class="setting" for="wisp-url">
+				Wisp server
+				<input
+					class="setting-control"
+					id="wisp-url"
+					type="text"
+					placeholder="wss://example.com/wisp/"
+					autocomplete="url"
+					spellcheck="false"
+				/>
+			</label>
+			<label class="setting" for="transport-select">
+				Transport
+				<select id="transport-select">
+					<option value="libcurl">Libcurl</option>
+					<option value="epoxy">Epoxy</option>
+				</select>
+			</label>
+			<label class="setting" for="home-url">
+				Home page URL
+				<input
+					class="setting-control"
+					id="home-url"
+					type="text"
+					placeholder="https://example.com/"
+					autocomplete="url"
+					spellcheck="false"
+				/>
+			</label>
+			<label class="setting" for="max-requests">
+				Request log limit
+				<input class="setting-control" id="max-requests" type="number" min="10" max="5000" step="10" />
+			</label>
+			<div class="setting-actions">
+				<button id="apply-runtime-settings" type="button">Apply settings</button>
+				<button id="reset-runtime-settings" type="button">Reset defaults</button>
+				<button id="revert-runtime-settings" type="button">Revert inputs</button>
+			</div>
 			<p class="settings-status" id="settings-status" role="status"></p>
+			<details class="dev-options">
+				<summary>Dev options</summary>
+				<div class="dev-actions">
+					<button id="open-feature-flags" type="button">Scramjet Feature Flags</button>
+					<button id="open-live-requests" type="button">Live Requests</button>
+				</div>
+			</details>
 		</dialog>
 		<script>
 			(() => {
@@ -442,6 +503,8 @@
 				const cloakSelect = document.querySelector("#cloak-select");
 				const status = document.querySelector("#settings-status");
 				const settings = { theme: "stark-night", cloak: "none" };
+				let savedRuntimeSettings;
+				let runtimeDefaults;
 
 				function updateStatus(message) {
 					status.textContent = message;
@@ -453,18 +516,45 @@
 					cloakSelect.value = nextSettings.cloak;
 				}
 
+				function applyRuntimeSettings(nextSettings) {
+					savedRuntimeSettings = { ...nextSettings };
+					document.querySelector("#wisp-url").value = nextSettings.wispUrl;
+					document.querySelector("#transport-select").value = nextSettings.transport;
+					document.querySelector("#home-url").value = nextSettings.homeUrl;
+					document.querySelector("#max-requests").value = nextSettings.maxRequests;
+				}
+
+				function saveRuntimeSettings(statusMessage = "Settings saved.") {
+					updateStatus("Applying settings...");
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-runtime-settings",
+							token: messageToken,
+							statusMessage,
+							settings: {
+								wispUrl: document.querySelector("#wisp-url").value,
+								transport: document.querySelector("#transport-select").value,
+								homeUrl: document.querySelector("#home-url").value,
+								maxRequests: document.querySelector("#max-requests").value,
+							},
+						},
+						"*"
+					);
+				}
+
 				window.addEventListener("message", (event) => {
-					if (
-						event.source !== window.parent ||
-						!event.data ||
-						event.data.token !== messageToken
-					) {
+					if (event.source !== window.parent || !event.data || event.data.token !== messageToken) {
 						return;
 					}
 
 					if (event.data.type === "scramjet-homepage-init") {
 						applySettings(event.data.settings);
+						applyRuntimeSettings(event.data.runtimeSettings);
+						runtimeDefaults = event.data.runtimeDefaults;
 						updateStatus("");
+					} else if (event.data.type === "scramjet-homepage-runtime-settings-saved") {
+						applyRuntimeSettings(event.data.settings);
+						updateStatus(event.data.statusMessage || "Settings saved.");
 					} else if (event.data.type === "scramjet-homepage-error") {
 						updateStatus(event.data.message);
 					}
@@ -487,34 +577,63 @@
 
 				themeSelect.addEventListener("change", saveSettings);
 				cloakSelect.addEventListener("change", saveSettings);
+				document.querySelector("#apply-runtime-settings").addEventListener("click", () => {
+					saveRuntimeSettings();
+				});
+				document.querySelector("#reset-runtime-settings").addEventListener("click", () => {
+					if (!runtimeDefaults) {
+						updateStatus("Default settings are not available.");
+						return;
+					}
+					applyRuntimeSettings(runtimeDefaults);
+					saveRuntimeSettings("Defaults restored.");
+				});
+				document.querySelector("#revert-runtime-settings").addEventListener("click", () => {
+					if (!savedRuntimeSettings) {
+						updateStatus("Saved settings are not available.");
+						return;
+					}
+					applyRuntimeSettings(savedRuntimeSettings);
+					updateStatus("Inputs reverted to saved settings.");
+				});
 				document
 					.querySelector("#settings-button")
-					.addEventListener("click", () =>
-						document.querySelector("#settings-dialog").showModal()
-					);
+					.addEventListener("click", () => document.querySelector("#settings-dialog").showModal());
 				document
 					.querySelector("#close-settings")
-					.addEventListener("click", () =>
-						document.querySelector("#settings-dialog").close()
-					);
-				document
-					.querySelector("#homepage-search")
-					.addEventListener("submit", (event) => {
-						event.preventDefault();
-						const query = document
-							.querySelector("#homepage-query")
-							.value.trim();
-						if (!query) return;
+					.addEventListener("click", () => document.querySelector("#settings-dialog").close());
+				document.querySelector("#homepage-search").addEventListener("submit", (event) => {
+					event.preventDefault();
+					const query = document.querySelector("#homepage-query").value.trim();
+					if (!query) return;
 
-						window.parent.postMessage(
-							{
-								type: "scramjet-homepage-navigate",
-								token: messageToken,
-								query,
-							},
-							"*"
-						);
-					});
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-navigate",
+							token: messageToken,
+							query,
+						},
+						"*"
+					);
+				});
+				document.querySelector("#open-feature-flags").addEventListener("click", () => {
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-open-dev-options",
+							token: messageToken,
+						},
+						"*"
+					);
+				});
+				document.querySelector("#open-live-requests").addEventListener("click", () => {
+					window.parent.postMessage(
+						{
+							type: "scramjet-homepage-open-requests",
+							token: messageToken,
+						},
+						"*"
+					);
+				});
 			})();
 		</script>
 	</body>
