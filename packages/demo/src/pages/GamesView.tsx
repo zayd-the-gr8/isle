@@ -1,5 +1,52 @@
 import { css, type Component } from "dreamland/core";
+import { ManagedPlugin, type Frame } from "@mercuryworkshop/scramjet-controller";
 import { cachePlugin, controller } from "..";
+
+class GameDataPrefetchPlugin extends ManagedPlugin {
+	constructor() {
+		super("obsidian-game-data-prefetch", []);
+	}
+
+	install(frame: Frame): void {
+		this.tap(frame.hooks.init.post, ({ window, client }) => {
+			if (client.url.hostname !== "playobsidian.com") return;
+
+			const originalFetch = window.fetch;
+			const downloads = new Map<number, Promise<Response>>();
+
+			window.fetch = (input, init) => {
+				if (typeof input !== "string" || (init?.method && init.method.toUpperCase() !== "GET")) {
+					return originalFetch.call(window, input, init);
+				}
+
+				const url = new URL(input, client.url.href);
+				const match = url.pathname.match(/^(.*\/game\.unx\.part)(\d+)$/);
+				if (!match) return originalFetch.call(window, input, init);
+
+				const firstPart = Number(match[2]);
+				const fetchPart = (part: number) => {
+					let download = downloads.get(part);
+					if (!download) {
+						const partUrl = new URL(url.href);
+						partUrl.pathname = `${match[1]}${part}`;
+						download = originalFetch.call(window, partUrl.href, init);
+						void download.catch((error) => {
+							console.error(`Unable to prefetch Obsidian game data part ${part}.`, error);
+						});
+						downloads.set(part, download);
+					}
+					return download;
+				};
+
+				for (let part = firstPart; part < firstPart + 4; part++) {
+					fetchPart(part);
+				}
+
+				return fetchPart(firstPart);
+			};
+		});
+	}
+}
 
 const GamesView: Component<
 	{},
@@ -34,7 +81,7 @@ const GamesView: Component<
 			this.frameContainer.appendChild(element);
 
 			const frame = controller.createFrame(element, {
-				plugins: [cachePlugin]
+				plugins: [cachePlugin, new GameDataPrefetchPlugin()]
 			});
 			frame.go("https://playobsidian.com/");
 		} catch (error) {
