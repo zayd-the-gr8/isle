@@ -1,5 +1,4 @@
 import { css, type Component } from "dreamland/core";
-import { CatchEscapedLinksPlugin } from "@mercuryworkshop/scramjet-utils";
 import { cachePlugin, controller } from "..";
 
 const GamesView: Component<
@@ -35,12 +34,7 @@ const GamesView: Component<
 			this.frameContainer.appendChild(element);
 
 			const frame = controller.createFrame(element, {
-				plugins: [
-					cachePlugin,
-					new CatchEscapedLinksPlugin(
-						(url) => new URL(`/?goto=${encodeURIComponent(url.href)}`, location.origin)
-					)
-				]
+				plugins: [cachePlugin]
 			});
 			frame.go("https://playobsidian.com/");
 		} catch (error) {
