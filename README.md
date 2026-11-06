@@ -1,9 +1,8 @@
-<img width=500 src=https://i.8upload.com/image/e388573df60f5ef3/bow-c.png>
+<p align=center><img width=700 src=https://i.8upload.com/image/e388573df60f5ef3/bow-c.png>
 <div>
   
-<a href="https://render.com/deploy?repo=https://github.com/zayd-the-gr8/isle"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" /></a>
 
-Click the button to create a new Render Blueprint from this repository and deploy the `scramjet-demo` free web service. The build prepares the WebAssembly rewriter and builds the demo; the service serves the demo and Wisp WebSocket endpoint from the same origin. The demo automatically uses `wss://<your-render-host>/wisp/` on HTTPS.
+Click [here](https://render.com/deploy?repo=https://github.com/zayd-the-gr8/isle) to create a new Render Blueprint from this repository and deploy the `scramjet-demo` free web service. The build prepares the WebAssembly rewriter and builds the demo; the service serves the demo and Wisp WebSocket endpoint from the same origin. The demo automatically uses `wss://<your-render-host>/wisp/` on HTTPS.
 ###### (dummified version) click the button to make your own link. 
 
 ---
@@ -24,21 +23,7 @@ Click the button to create a new Render Blueprint from this repository and deplo
 <a alt=GeForce Now> <img height="32" width="32" src="https://cdn.simpleicons.org/nvidia/000000/ffffff" /> </a>
 <a alt=X> <img height="32" width="32" src="https://cdn.simpleicons.org/instagram/000000/ffffff" /> </a>
 
-- [Google](https://google.com)
-- [Youtube](https://youtube.com)
-- [Instagram](https://instagram.com)
-- [ChatGPT](https://chatgpt.com)
-- [Reddit](https://reddit.com)
-- [Twitter](https://twitter.com)
-- [Discord](https://discord.com)
-- [Spotify](https://spotify.com)
-- [GeForce NOW](https://play.geforcenow.com/)
-- [now.gg](https://now.gg)
-
-## Development
-
-
-#### Building
+#### Host, on Render
 
 <a href="https://render.com/deploy?repo=https://github.com/zayd-the-gr8/isle"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" /></a>
 
