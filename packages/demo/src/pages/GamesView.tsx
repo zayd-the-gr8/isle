@@ -21,6 +21,11 @@ const GamesView: Component<
 			element.allow = "autoplay; fullscreen; gamepad; clipboard-read; clipboard-write";
 			element.allowFullscreen = true;
 			element.referrerPolicy = "strict-origin-when-cross-origin";
+			element.style.display = "block";
+			element.style.width = "100%";
+			element.style.height = "100%";
+			element.style.border = "0";
+			element.style.background = "#fff";
 			element.addEventListener("load", () => {
 				this.status = "";
 			});
@@ -67,13 +72,6 @@ GamesView.style = css`
 	.games-frame-container {
 		position: absolute;
 		inset: 0;
-	}
-	.games-frame-container iframe {
-		display: block;
-		width: 100%;
-		height: 100%;
-		border: 0;
-		background: #fff;
 	}
 	.games-status {
 		position: absolute;
