@@ -1,26 +1,28 @@
-<h1 align="center">Scramjet</h1>
-<div align="center">
-  <img src="assets/scramjet.png" height="200" />
-</div>
+<img width=500 src=https://i.8upload.com/image/e388573df60f5ef3/bow-c.png>
+<div>
+  
+<a href="https://render.com/deploy?repo=https://github.com/zayd-the-gr8/isle"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" /></a>
 
-<div align="center">
-  <a href="https://www.npmjs.com/package/@mercuryworkshop/scramjet"><img src="https://img.shields.io/npm/v/@mercuryworkshop/scramjet.svg?maxAge=3600" alt="npm version" /></a>
-  <img src="https://img.shields.io/github/issues/MercuryWorkshop/scramjet?style=flat&color=orange" />
-  <img src="https://img.shields.io/github/stars/MercuryWorkshop/scramjet?style=flat&color=orange" />
-</div>
+Click the button to create a new Render Blueprint from this repository and deploy the `scramjet-demo` free web service. The build prepares the WebAssembly rewriter and builds the demo; the service serves the demo and Wisp WebSocket endpoint from the same origin. The demo automatically uses `wss://<your-render-host>/wisp/` on HTTPS.
+###### (dummified version) click the button to make your own link. 
 
 ---
 
-Scramjet is an experimental interception-based web proxy designed to evade internet censorship and bypass arbitrary browser restrictions.<br><br>
-Scramjet allows you to sandbox arbitrary web content, bypass CORS restrictions on loading websites, and instrument and debug websites inside the browser itself. This is accomplished through a combination of interception, rewriting, and sandboxing techniques. You can learn more about the technical details <a href="https://developer.puter.com/blog/how-I-ported-the-web-to-the-web/"><strong>here</strong></a>.<br><br>
 
-<div align="center">
- <a href="https://github.com/MercuryWorkshop/scramjet/wiki">Documentation</a> | <a href="https://scramjet.mercurywork.shop">Playground</a> | <a href="https://discord.gg/tmApqGqfX2">Discord</a>
-</div>
 
-## Supported Sites
-
-Some of the popular websites that Scramjet supports include:
+<h4> Things You Can Use With /isle</h4>
+<a alt=Google> <img height="32" width="32" src="https://cdn.simpleicons.org/google/000000/ffffff" /> </a>
+<a alt=TikTok> <img height="32" width="32" src="https://cdn.simpleicons.org/tiktok/000000/ffffff" /> </a>
+<a alt=snap> <img height="32" width="32" src="https://cdn.simpleicons.org/snapchat/000000/ffffff" /> </a>
+<a alt=YouTube> <img height="32" width="32" src="https://cdn.simpleicons.org/YouTube/000000/ffffff" /> </a>
+<a alt=Insta> <img height="32" width="32" src="https://cdn.simpleicons.org/instagram/000000/ffffff" /> </a>
+<a alt=ChatGPT> <img height="32" width="32" src="https://cdn.simpleicons.org/chatbot/000000/ffffff" /> </a>
+<a alt=Reddit> <img height="32" width="32" src="https://cdn.simpleicons.org/reddit/000000/ffffff" /> </a>
+<a alt=X> <img height="32" width="32" src="https://cdn.simpleicons.org/x/000000/ffffff" /> </a>
+<a alt=discord> <img height="32" width="32" src="https://cdn.simpleicons.org/discord/000000/ffffff" /> </a>
+<a alt=spotify> <img height="32" width="32" src="https://cdn.simpleicons.org/spotify/000000/ffffff" /> </a>
+<a alt=GeForce Now> <img height="32" width="32" src="https://cdn.simpleicons.org/nvidia/000000/ffffff" /> </a>
+<a alt=X> <img height="32" width="32" src="https://cdn.simpleicons.org/instagram/000000/ffffff" /> </a>
 
 - [Google](https://google.com)
 - [Youtube](https://youtube.com)
@@ -35,34 +37,14 @@ Some of the popular websites that Scramjet supports include:
 
 ## Development
 
-### Dependencies
-
-- Recent versions of `node.js` and `pnpm`
-- `rustup`
-- `wasm-bindgen`
-- [Binaryen's `wasm-opt`](https://github.com/WebAssembly/binaryen)
-- [this `wasm-snip` fork](https://github.com/r58Playz/wasm-snip)
 
 #### Building
 
-- Clone the repository with `git clone --recursive https://github.com/MercuryWorkshop/scramjet`
-- Install the dependencies with `pnpm i`
-- Change directories with `cd packages/core`
-- Build the rewriter with `pnpm rewriter:build`
-- Build Scramjet with `pnpm build`
+<a href="https://render.com/deploy?repo=https://github.com/zayd-the-gr8/isle"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" /></a>
 
-### Running Scramjet Locally
+Click the button to create a new Render Blueprint from this repository and deploy the `scramjet-demo` free web service. The build prepares the WebAssembly rewriter and builds the demo; the service serves the demo and Wisp WebSocket endpoint from the same origin. The demo automatically uses `wss://<your-render-host>/wisp/` on HTTPS.
 
-You can run the Scramjet dev server when running this command at the root
+When you're done, share your link with me via email , at zayd@emailthing.xyz , or adamantium.claws on discord, so I can add your link to our database! 
 
-```sh
-pnpm dev
-```
-
-The demo page for scramjet should now be running at <http://localhost:4141> and should rebuild upon a file being changed (excluding the rewriter).
-
-### Deploying the Demo on Render
-
-The repository includes a Render Blueprint in `render.yaml`. Create a new Blueprint from this repository and deploy the `scramjet-demo` free web service. The build prepares the WebAssembly rewriter and builds the demo; the service serves the demo and Wisp WebSocket endpoint from the same origin. The demo automatically uses `wss://<your-render-host>/wisp/` on HTTPS.
-
-The public Wisp endpoint rejects direct-IP, private, loopback, and UDP requests; accepts WebSocket upgrades only from the service's own origin; and limits concurrent Wisp connections and streams. Render's free service may spin down while idle, so the first request after inactivity can take longer to connect.
+this project uses some keys of scramjet ! this project couldn't be done without the kings at <a href=https://github.com/MercuryWorkshop/scramjet> Mercury Workshop </p>
+all designs are made, copyright (c) ZAYD AHMED 
