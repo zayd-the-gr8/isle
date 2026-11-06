@@ -16,16 +16,13 @@ catalogs:
       specifier: 1.0.2
       version: 1.0.2
     '@mercuryworkshop/wisp-js':
-      specifier: 0.4.1
-      version: 0.4.1
+      specifier: 0.5.2
+      version: 0.5.2
 
 overrides:
   htmlparser2: 12.0.0
 
 patchedDependencies:
-  '@mercuryworkshop/wisp-js@0.4.1':
-    hash: d4ec8fba9be80d9501b386868c74dd4980723976a96882ca28869f22eb176976
-    path: patches/@mercuryworkshop__wisp-js@0.4.1.patch
   htmlparser2@12.0.0:
     hash: 741b06dbf8a09e52a2116a4a219a8625dbebe8d75d37e1210314f06aa952ce9b
     path: patches/htmlparser2@12.0.0.patch
@@ -36,7 +33,7 @@ importers:
     dependencies:
       '@mercuryworkshop/wisp-js':
         specifier: 'catalog:'
-        version: 0.4.1(patch_hash=d4ec8fba9be80d9501b386868c74dd4980723976a96882ca28869f22eb176976)
+        version: 0.5.2
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
@@ -46,10 +43,10 @@ importers:
         version: 3.2.1
       '@rsdoctor/rspack-plugin':
         specifier: ^1.4.0
-        version: 1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)
+        version: 1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)
       '@rspack/cli':
         specifier: ^1.5.8
-        version: 1.5.8(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.0.9)(webpack@5.104.1)
+        version: 1.5.8(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.1.0)(webpack@5.104.1)
       '@rspack/core':
         specifier: ^1.5.8
         version: 1.6.7(@swc/helpers@0.5.17)
@@ -82,7 +79,7 @@ importers:
     dependencies:
       '@mercuryworkshop/wisp-js':
         specifier: 'catalog:'
-        version: 0.4.1(patch_hash=d4ec8fba9be80d9501b386868c74dd4980723976a96882ca28869f22eb176976)
+        version: 0.5.2
       tar:
         specifier: ^7.5.1
         version: 7.5.1
@@ -257,7 +254,7 @@ importers:
         version: link:../controller
       '@mercuryworkshop/wisp-js':
         specifier: 'catalog:'
-        version: 0.4.1(patch_hash=d4ec8fba9be80d9501b386868c74dd4980723976a96882ca28869f22eb176976)
+        version: 0.5.2
       express:
         specifier: ^4.18.2
         version: 4.21.2
@@ -272,7 +269,7 @@ importers:
         version: 9.3.0
       ws:
         specifier: ^8.18.3
-        version: 8.18.3(bufferutil@4.0.9)
+        version: 8.18.3(bufferutil@4.1.0)
     devDependencies:
       '@types/express':
         specifier: ^4.17.21
@@ -617,9 +614,11 @@ packages:
 
   '@mercuryworkshop/epoxy-tls@2.1.19-1':
     resolution: {integrity: sha512-lF3WVDmKDWfClgFaDm1OAGI6PStcUUKUjNh2AJbfmLXEGh+dT4nvsuTY2QGRImnajCboIRyrpx9eGNY0egZSVg==}
+    deprecated: Trusts the compromised eMudhra intermediate CAs (Oct 2026). Upgrade to >=2.1.20-1.
 
   '@mercuryworkshop/epoxy-transport@3.0.1':
     resolution: {integrity: sha512-8YzL73WaXZJLBRydmmY6NNPt5leB8ygBYuqgLn4+pGQ+wgi+JUC7ZdBQrA86TR6Oue3twbdfDvLRp48bzZ7DSw==}
+    deprecated: Bundles an epoxy-tls that trusts the compromised eMudhra intermediate CAs (Oct 2026). Upgrade to >=3.0.2 (proxy-transports) or 2.1.29 (bare-mux).
 
   '@mercuryworkshop/libcurl-transport@2.0.5':
     resolution: {integrity: sha512-YkAPEAWTEUZZkEOejmRQJxNHw90+kNQnoiSqa5H2sExHBXXdGSXEtg7/35A53U8MDVaznpAwjVbXRONSsfatzw==}
@@ -627,8 +626,8 @@ packages:
   '@mercuryworkshop/proxy-transports@1.0.2':
     resolution: {integrity: sha512-zgD+JMYNSx8LxVLWwGPPVnoDHjoh1GqqwUJIjhIwCwhy+Z7g+MhmiTJvCcRPAo7qXXbqJwIrpBJduRSOrjMV7g==}
 
-  '@mercuryworkshop/wisp-js@0.4.1':
-    resolution: {integrity: sha512-104LwiXiuhti/e32gmv0Da0u0yuLFDHX8JawCzleTPWJ5t5qTX4EYi4E7/ucbjBPN9wwVPWHE5g5yGqzl/NzQA==}
+  '@mercuryworkshop/wisp-js@0.5.2':
+    resolution: {integrity: sha512-3HeXCc4qb0iDwYdU9u1fZ2lRUtwM0hzkCrs+yLqGD2Dvr0A4jahLJ5X8CvqEdILpCF21wHIfa54t4r5x7Q1JpQ==}
     hasBin: true
 
   '@module-federation/error-codes@0.21.6':
@@ -1343,8 +1342,8 @@ packages:
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
 
-  bufferutil@4.0.9:
-    resolution: {integrity: sha512-WDtdLmJvAuNNPzByAYpRo2rF1Mmradw6gvWsQKf63476DDXmomT9zUiGypLcG4ibIM67vhAj8jJRdbmEws2Aqw==}
+  bufferutil@4.1.0:
+    resolution: {integrity: sha512-ZMANVnAixE6AWWnPzlW2KpUrxhm9woycYvPOo67jWHyFowASTEd9s+QN1EIMsSDtwhIxN4sWE1jotpuDUIgyIw==}
     engines: {node: '>=6.14.2'}
 
   bundle-name@4.1.0:
@@ -1444,9 +1443,9 @@ packages:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
 
-  commander@14.0.2:
-    resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
-    engines: {node: '>=20'}
+  commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
 
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
@@ -2180,12 +2179,12 @@ packages:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
 
-  ipaddr.js@2.2.0:
-    resolution: {integrity: sha512-Ag3wB2o37wslZS19hZqorUnrnzSkpOVy+IiiDEiTqNubEYpYuHWIf6K4psgN2ZWKExS4xhVCrRVfb/wfW8fWJA==}
-    engines: {node: '>= 10'}
-
   ipaddr.js@2.3.0:
     resolution: {integrity: sha512-Zv/pA+ciVFbCSBBjGfaKUya/CcGmUHzTydLMaTwrUUEM2DIEO3iZvueGxmacvmN50fGpGVKeTXpb2LcYQxeVdg==}
+    engines: {node: '>= 10'}
+
+  ipaddr.js@2.5.0:
+    resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
     engines: {node: '>= 10'}
 
   irregular-plurals@3.5.0:
@@ -3198,6 +3197,7 @@ packages:
 
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8-to-istanbul@9.3.0:
@@ -3395,6 +3395,18 @@ packages:
 
   ws@8.18.3:
     resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -3720,12 +3732,12 @@ snapshots:
 
   '@mercuryworkshop/proxy-transports@1.0.2': {}
 
-  '@mercuryworkshop/wisp-js@0.4.1(patch_hash=d4ec8fba9be80d9501b386868c74dd4980723976a96882ca28869f22eb176976)':
+  '@mercuryworkshop/wisp-js@0.5.2':
     dependencies:
-      bufferutil: 4.0.9
-      commander: 14.0.2
-      ipaddr.js: 2.3.0
-      ws: 8.18.3(bufferutil@4.0.9)
+      bufferutil: 4.1.0
+      commander: 15.0.0
+      ipaddr.js: 2.5.0
+      ws: 8.22.1(bufferutil@4.1.0)
     transitivePeerDependencies:
       - utf-8-validate
 
@@ -3873,11 +3885,11 @@ snapshots:
 
   '@rsdoctor/client@1.4.0': {}
 
-  '@rsdoctor/core@1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)':
+  '@rsdoctor/core@1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)':
     dependencies:
       '@rsbuild/plugin-check-syntax': 1.5.0(@rsbuild/core@1.6.14)
       '@rsdoctor/graph': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
-      '@rsdoctor/sdk': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)
+      '@rsdoctor/sdk': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)
       '@rsdoctor/types': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       '@rsdoctor/utils': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       browserslist-load-config: 1.0.1
@@ -3906,11 +3918,11 @@ snapshots:
       - '@rspack/core'
       - webpack
 
-  '@rsdoctor/rspack-plugin@1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)':
+  '@rsdoctor/rspack-plugin@1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)':
     dependencies:
-      '@rsdoctor/core': 1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)
+      '@rsdoctor/core': 1.4.0(@rsbuild/core@1.6.14)(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)
       '@rsdoctor/graph': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
-      '@rsdoctor/sdk': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)
+      '@rsdoctor/sdk': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)
       '@rsdoctor/types': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       '@rsdoctor/utils': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
     optionalDependencies:
@@ -3922,14 +3934,14 @@ snapshots:
       - utf-8-validate
       - webpack
 
-  '@rsdoctor/sdk@1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.0.9)(webpack@5.104.1)':
+  '@rsdoctor/sdk@1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(bufferutil@4.1.0)(webpack@5.104.1)':
     dependencies:
       '@rsdoctor/client': 1.4.0
       '@rsdoctor/graph': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       '@rsdoctor/types': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       '@rsdoctor/utils': 1.4.0(@rspack/core@1.6.7(@swc/helpers@0.5.17))(webpack@5.104.1)
       safer-buffer: 2.1.2
-      socket.io: 4.8.1(bufferutil@4.0.9)
+      socket.io: 4.8.1(bufferutil@4.1.0)
       tapable: 2.2.3
     transitivePeerDependencies:
       - '@rspack/core'
@@ -4014,15 +4026,15 @@ snapshots:
       '@rspack/binding-win32-ia32-msvc': 1.6.7
       '@rspack/binding-win32-x64-msvc': 1.6.7
 
-  '@rspack/cli@1.5.8(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.0.9)(webpack@5.104.1)':
+  '@rspack/cli@1.5.8(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.1.0)(webpack@5.104.1)':
     dependencies:
       '@discoveryjs/json-ext': 0.5.7
       '@rspack/core': 1.6.7(@swc/helpers@0.5.17)
-      '@rspack/dev-server': 1.1.4(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.0.9)(webpack@5.104.1)
+      '@rspack/dev-server': 1.1.4(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.1.0)(webpack@5.104.1)
       colorette: 2.0.20
       exit-hook: 4.0.0
       pirates: 4.0.7
-      webpack-bundle-analyzer: 4.10.2(bufferutil@4.0.9)
+      webpack-bundle-analyzer: 4.10.2(bufferutil@4.1.0)
       yargs: 17.7.2
     transitivePeerDependencies:
       - '@types/express'
@@ -4041,14 +4053,14 @@ snapshots:
     optionalDependencies:
       '@swc/helpers': 0.5.17
 
-  '@rspack/dev-server@1.1.4(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.0.9)(webpack@5.104.1)':
+  '@rspack/dev-server@1.1.4(@rspack/core@1.6.7(@swc/helpers@0.5.17))(@types/express@4.17.24)(bufferutil@4.1.0)(webpack@5.104.1)':
     dependencies:
       '@rspack/core': 1.6.7(@swc/helpers@0.5.17)
       chokidar: 3.6.0
       http-proxy-middleware: 2.0.9(@types/express@4.17.24)
       p-retry: 6.2.1
-      webpack-dev-server: 5.2.2(bufferutil@4.0.9)(webpack@5.104.1)
-      ws: 8.18.3(bufferutil@4.0.9)
+      webpack-dev-server: 5.2.2(bufferutil@4.1.0)(webpack@5.104.1)
+      ws: 8.18.3(bufferutil@4.1.0)
     transitivePeerDependencies:
       - '@types/express'
       - bufferutil
@@ -4646,7 +4658,7 @@ snapshots:
   buffer-from@1.1.2:
     optional: true
 
-  bufferutil@4.0.9:
+  bufferutil@4.1.0:
     dependencies:
       node-gyp-build: 4.8.4
 
@@ -4738,7 +4750,7 @@ snapshots:
 
   commander@12.1.0: {}
 
-  commander@14.0.2: {}
+  commander@15.0.0: {}
 
   commander@2.20.3:
     optional: true
@@ -4953,7 +4965,7 @@ snapshots:
 
   engine.io-parser@5.2.3: {}
 
-  engine.io@6.6.5(bufferutil@4.0.9):
+  engine.io@6.6.5(bufferutil@4.1.0):
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 24.9.1
@@ -4963,7 +4975,7 @@ snapshots:
       cors: 2.8.5
       debug: 4.4.3
       engine.io-parser: 5.2.3
-      ws: 8.18.3(bufferutil@4.0.9)
+      ws: 8.18.3(bufferutil@4.1.0)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -5507,9 +5519,9 @@ snapshots:
 
   ipaddr.js@1.9.1: {}
 
-  ipaddr.js@2.2.0: {}
-
   ipaddr.js@2.3.0: {}
+
+  ipaddr.js@2.5.0: {}
 
   irregular-plurals@3.5.0: {}
 
@@ -6182,10 +6194,10 @@ snapshots:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 4.0.0
 
-  socket.io-adapter@2.5.6(bufferutil@4.0.9):
+  socket.io-adapter@2.5.6(bufferutil@4.1.0):
     dependencies:
       debug: 4.4.3
-      ws: 8.18.3(bufferutil@4.0.9)
+      ws: 8.18.3(bufferutil@4.1.0)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -6198,14 +6210,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  socket.io@4.8.1(bufferutil@4.0.9):
+  socket.io@4.8.1(bufferutil@4.1.0):
     dependencies:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.5
       debug: 4.3.7
-      engine.io: 6.6.5(bufferutil@4.0.9)
-      socket.io-adapter: 2.5.6(bufferutil@4.0.9)
+      engine.io: 6.6.5(bufferutil@4.1.0)
+      socket.io-adapter: 2.5.6(bufferutil@4.1.0)
       socket.io-parser: 4.2.5
     transitivePeerDependencies:
       - bufferutil
@@ -6537,7 +6549,7 @@ snapshots:
 
   webidl-conversions@3.0.1: {}
 
-  webpack-bundle-analyzer@4.10.2(bufferutil@4.0.9):
+  webpack-bundle-analyzer@4.10.2(bufferutil@4.1.0):
     dependencies:
       '@discoveryjs/json-ext': 0.5.7
       acorn: 8.15.0
@@ -6550,7 +6562,7 @@ snapshots:
       opener: 1.5.2
       picocolors: 1.1.1
       sirv: 2.0.4
-      ws: 7.5.10(bufferutil@4.0.9)
+      ws: 7.5.10(bufferutil@4.1.0)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -6566,7 +6578,7 @@ snapshots:
     optionalDependencies:
       webpack: 5.104.1
 
-  webpack-dev-server@5.2.2(bufferutil@4.0.9)(webpack@5.104.1):
+  webpack-dev-server@5.2.2(bufferutil@4.1.0)(webpack@5.104.1):
     dependencies:
       '@types/bonjour': 3.5.13
       '@types/connect-history-api-fallback': 1.5.4
@@ -6585,7 +6597,7 @@ snapshots:
       express: 4.21.2
       graceful-fs: 4.2.11
       http-proxy-middleware: 2.0.9(@types/express@4.17.24)
-      ipaddr.js: 2.2.0
+      ipaddr.js: 2.3.0
       launch-editor: 2.11.1
       open: 10.2.0
       p-retry: 6.2.1
@@ -6595,7 +6607,7 @@ snapshots:
       sockjs: 0.3.24
       spdy: 4.0.2
       webpack-dev-middleware: 7.4.5(webpack@5.104.1)
-      ws: 8.18.3(bufferutil@4.0.9)
+      ws: 8.18.3(bufferutil@4.1.0)
     optionalDependencies:
       webpack: 5.104.1
     transitivePeerDependencies:
@@ -6678,13 +6690,17 @@ snapshots:
       imurmurhash: 0.1.4
       signal-exit: 4.1.0
 
-  ws@7.5.10(bufferutil@4.0.9):
+  ws@7.5.10(bufferutil@4.1.0):
     optionalDependencies:
-      bufferutil: 4.0.9
+      bufferutil: 4.1.0
 
-  ws@8.18.3(bufferutil@4.0.9):
+  ws@8.18.3(bufferutil@4.1.0):
     optionalDependencies:
-      bufferutil: 4.0.9
+      bufferutil: 4.1.0
+
+  ws@8.22.1(bufferutil@4.1.0):
+    optionalDependencies:
+      bufferutil: 4.1.0
 
   wsl-utils@0.1.0:
     dependencies:
