@@ -2,16 +2,19 @@ import { css, type Component } from "dreamland/core";
 import FlagEditor from "./components/FlagEditor";
 import BrowserView, { browserState } from "./pages/BrowserView";
 import RequestViewer from "./pages/RequestViewer";
+import GamesView from "./pages/GamesView";
 import PlaygroundView from "./pages/Playground";
 
 const App: Component<
 	{},
 	{},
 	{
-		activeTab: "browser" | "playground" | "requests" | "dev-options";
+		activeTab: "browser" | "games" | "playground" | "requests" | "dev-options";
+		gamesLoaded: boolean;
 	}
 > = function (cx) {
 	this.activeTab ??= "browser";
+	this.gamesLoaded ??= false;
 	cx.mount = () => {
 		window.addEventListener("scramjet-demo-open-requests", () => {
 			this.activeTab = "requests";
@@ -31,6 +34,15 @@ const App: Component<
 						}}
 					>
 						Browser
+					</button>
+					<button
+						class={use(this.activeTab).map((tab) => `tab-button ${tab === "games" ? "active" : ""}`)}
+						on:click={() => {
+							this.gamesLoaded = true;
+							this.activeTab = "games";
+						}}
+					>
+						Games
 					</button>
 					<button
 						class={use(this.activeTab).map((tab) => `tab-button ${tab === "playground" ? "active" : ""}`)}
@@ -60,6 +72,11 @@ const App: Component<
 				)}
 			>
 				<PlaygroundView active={use(this.activeTab).map((tab) => tab === "playground")} />
+			</div>
+			<div class={use(this.activeTab).map((tab) => `tab-panel games-panel ${tab === "games" ? "active" : ""}`)}>
+				{use(this.gamesLoaded).map((loaded) =>
+					loaded ? <GamesView /> : <div class="games-placeholder">Select Games to open Obsidian.</div>
+				)}
 			</div>
 			<div
 				class={use(this.activeTab).map(
@@ -320,6 +337,12 @@ App.style = css`
 		width: 100%;
 		min-width: 0;
 		min-height: 0;
+	}
+	.games-panel {
+		background: var(--chrome-bg);
+	}
+	.games-placeholder {
+		width: 100%;
 	}
 `;
 export default App;
