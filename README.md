@@ -34,3 +34,11 @@ When you're done, share your link with me via email , at zayd@emailthing.xyz , o
 this project uses some keys of scramjet ! this project couldn't be done without the dukes at <a href=https://github.com/MercuryWorkshop/scramjet> Mercury Workshop </p> 
 
 all designs are made, copyright (c) ZAYD AHMED 
+
+## Optional WireGuard egress on Render
+
+The Render web service can route Wisp TCP connections through [Wireproxy](https://github.com/windtf/wireproxy) and a WireGuard peer. This can provide an alternate route when Render's shared datacenter IPs cannot reach a site. Wireproxy is a client, not a VPN provider, so you need a WireGuard client config from a VPN provider or a WireGuard server you control.
+
+To enable it, add a secret environment variable named `WIREGUARD_CONFIG` in the Render dashboard and paste the complete WireGuard client config, including its `[Interface]` and `[Peer]` sections. Redeploy the service. Wireproxy listens only on `127.0.0.1`; its SOCKS port is not exposed publicly. Without this variable, the service keeps its normal direct-egress behavior. An invalid config prevents startup instead of silently falling back to direct egress.
+
+The Render build downloads a pinned Wireproxy release and verifies its checksum. Wisp UDP streams remain disabled. The tunnel's availability and exit location depend on the WireGuard peer you configure; Render does not provision a VPN endpoint or guarantee that a given peer is reachable.

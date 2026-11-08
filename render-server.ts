@@ -1,20 +1,121 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { spawn, type ChildProcess } from "node:child_process";
 import http from "node:http";
+import net from "node:net";
+import { tmpdir } from "node:os";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import type { Duplex } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { TLSSocket } from "node:tls";
 import { server as wisp } from "@mercuryworkshop/wisp-js/server";
+import { WireproxyTCPSocket } from "./wireproxy-transport.ts";
 
 const publicDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "packages/demo/dist");
 const port = Number(process.env.PORT ?? 10000);
 const wispPath = "/wisp/";
 const maxWispConnections = 32;
 const maxHttpConnections = 96;
+const wireproxyAddress = { host: "127.0.0.1", port: 25344 };
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
 	throw new RangeError(`Invalid PORT: ${process.env.PORT}`);
+}
+
+let wireproxyProcess: ChildProcess | null = null;
+let wireproxyDirectory: string | null = null;
+let shuttingDown = false;
+
+function runWireproxyCheck(binary: string, configPath: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const child = spawn(binary, ["--config", configPath, "--configtest"], {
+			stdio: "inherit"
+		});
+		child.once("error", reject);
+		child.once("exit", (code) => {
+			if (code === 0) resolve();
+			else reject(new Error(`Wireproxy config validation failed with exit code ${code}.`));
+		});
+	});
+}
+
+async function waitForWireproxy(child: ChildProcess): Promise<void> {
+	const deadline = Date.now() + 10_000;
+	while (Date.now() < deadline) {
+		if (child.exitCode !== null) {
+			throw new Error(`Wireproxy exited during startup with code ${child.exitCode}.`);
+		}
+		try {
+			await new Promise<void>((resolve, reject) => {
+				const socket = net.createConnection(wireproxyAddress);
+				socket.setTimeout(500);
+				socket.once("connect", () => {
+					socket.destroy();
+					resolve();
+				});
+				socket.once("error", reject);
+				socket.once("timeout", () => {
+					socket.destroy();
+					reject(new Error("Timed out waiting for Wireproxy SOCKS5 listener."));
+				});
+			});
+			return;
+		} catch {
+			await new Promise((resolve) => setTimeout(resolve, 250));
+		}
+	}
+	throw new Error("Wireproxy did not start its local SOCKS5 listener within 10 seconds.");
+}
+
+async function startWireproxy(): Promise<void> {
+	const wireguardConfig = process.env.WIREGUARD_CONFIG?.trim();
+	if (!wireguardConfig) return;
+
+	const binary = resolve(dirname(fileURLToPath(import.meta.url)), ".render-bin/wireproxy");
+	wireproxyDirectory = await mkdtemp(join(tmpdir(), "scramjet-wireproxy-"));
+	const wireguardPath = join(wireproxyDirectory, "wireguard.conf");
+	const wireproxyConfigPath = join(wireproxyDirectory, "wireproxy.conf");
+
+	try {
+		await writeFile(wireguardPath, `${wireguardConfig}\n`, { mode: 0o600 });
+		await writeFile(
+			wireproxyConfigPath,
+			`WGConfig = ${wireguardPath}\n[Socks5]\nBindAddress = ${wireproxyAddress.host}:${wireproxyAddress.port}\n`,
+			{ mode: 0o600 }
+		);
+		await runWireproxyCheck(binary, wireproxyConfigPath);
+	} catch (error) {
+		await rm(wireproxyDirectory, { recursive: true, force: true });
+		wireproxyDirectory = null;
+		throw error;
+	}
+
+	wireproxyProcess = spawn(binary, ["--config", wireproxyConfigPath], {
+		stdio: "inherit"
+	});
+	wireproxyProcess.once("error", (error) => {
+		console.error("Wireproxy failed to start:", error);
+	});
+	wireproxyProcess.once("exit", (code) => {
+		if (!shuttingDown) {
+			console.error(`Wireproxy exited unexpectedly with code ${code}.`);
+		}
+		if (wireproxyDirectory) {
+			void rm(wireproxyDirectory, { recursive: true, force: true }).catch((error) => {
+				console.error("Failed to remove temporary Wireproxy configuration:", error);
+			});
+			wireproxyDirectory = null;
+		}
+	});
+	try {
+		await waitForWireproxy(wireproxyProcess);
+	} catch (error) {
+		wireproxyProcess.kill("SIGTERM");
+		await rm(wireproxyDirectory, { recursive: true, force: true });
+		wireproxyDirectory = null;
+		throw error;
+	}
+	console.log("Wireproxy is routing Wisp TCP connections through the configured WireGuard peer.");
 }
 
 wisp.options.allow_direct_ip = false;
@@ -36,7 +137,7 @@ function respond(
 		"Content-Type": "text/plain; charset=utf-8",
 		"Content-Length": Buffer.byteLength(message),
 		"X-Content-Type-Options": "nosniff",
-		...headers,
+		...headers
 	});
 	response.end(message);
 }
@@ -118,7 +219,7 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 		"Content-Type": contentType(targetPath),
 		"Content-Length": fileInfo.size,
 		"Cache-Control": "no-cache",
-		"X-Content-Type-Options": "nosniff",
+		"X-Content-Type-Options": "nosniff"
 	});
 	if (request.method === "HEAD") {
 		response.end();
@@ -184,7 +285,7 @@ const server = http.createServer((request, response) => {
 	}
 	if (pathname === wispPath || pathname.startsWith(wispPath)) {
 		respond(response, 426, "WebSocket Upgrade Required", {
-			Upgrade: "websocket",
+			Upgrade: "websocket"
 		});
 		return;
 	}
@@ -220,14 +321,35 @@ server.on("upgrade", (request, socket, head) => {
 	wispSockets.add(socket);
 	socket.once("close", () => wispSockets.delete(socket));
 	try {
-		wisp.routeRequest(request, socket, head);
+		if (wireproxyProcess) {
+			wisp.routeRequest(request, socket, head, {
+				TCPSocket: class extends WireproxyTCPSocket {
+					constructor(hostname: string, port: number) {
+						super(hostname, port, wireproxyAddress.host, wireproxyAddress.port);
+					}
+				}
+			});
+		} else {
+			wisp.routeRequest(request, socket, head);
+		}
 	} catch (error) {
 		console.error("Failed to route Wisp WebSocket:", error);
 		socket.destroy();
 	}
 });
 
+await startWireproxy();
 await stat(join(publicDirectory, "index.html"));
 server.listen(port, "0.0.0.0", () => {
 	console.log(`Scramjet demo and Wisp listening on port ${port}`);
 });
+
+function shutdown(signal: NodeJS.Signals) {
+	shuttingDown = true;
+	server.close();
+	for (const socket of wispSockets) socket.destroy();
+	wireproxyProcess?.kill(signal);
+}
+
+process.once("SIGTERM", () => shutdown("SIGTERM"));
+process.once("SIGINT", () => shutdown("SIGINT"));
