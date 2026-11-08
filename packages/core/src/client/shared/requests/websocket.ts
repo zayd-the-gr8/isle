@@ -8,8 +8,6 @@ import {
 } from "@/shared/snapshot";
 
 type FakeWebSocketState = {
-	protocol: string;
-	extensions: string;
 	url: string;
 	binaryType: string;
 	barews: BareCompatibleWebSocket;
@@ -20,8 +18,6 @@ type FakeWebSocketState = {
 	onerror: (ev: Event) => any | null;
 };
 type FakeWebSocketStreamState = {
-	protocol: string;
-	extensions: string;
 	url: string;
 	barews: BareCompatibleWebSocket;
 
@@ -63,15 +59,20 @@ export default function (client: ScramjetClient, self: GlobalThis) {
 					},
 				});
 
-			const barews = client.bare.createWebSocket(url, ctx.args[1], [
+			const requestHeaders: [string, string][] = [
 				["User-Agent", self.navigator.userAgent],
 				["Origin", client.url.origin],
-				["Cookie", client.context.cookieJar.getCookies(client.url, false)],
-			]);
+			];
+			const cookies = client.context.cookieJar.getCookies(rawurl, false);
+			if (cookies) requestHeaders.push(["Cookie", cookies]);
+
+			const barews = client.bare.createWebSocket(
+				url,
+				ctx.args[1],
+				requestHeaders
+			);
 
 			const state: FakeWebSocketState = {
-				protocol: "",
-				extensions: "",
 				url,
 				binaryType: "blob",
 				barews,
@@ -158,7 +159,7 @@ export default function (client: ScramjetClient, self: GlobalThis) {
 			const ws = socketmap.get(ctx.this);
 			if (!ws) return ctx.get();
 
-			return ws.extensions;
+			return ws.barews.extensions;
 		},
 	});
 
@@ -236,7 +237,7 @@ export default function (client: ScramjetClient, self: GlobalThis) {
 			const ws = socketmap.get(ctx.this);
 			if (!ws) return ctx.get();
 
-			return ws.protocol;
+			return ws.barews.protocol;
 		},
 	});
 
@@ -275,17 +276,34 @@ export default function (client: ScramjetClient, self: GlobalThis) {
 			Object_setPrototypeOf(fakeWebSocket, ctx.fn.prototype);
 			fakeWebSocket.constructor = ctx.fn;
 
-			const barews = client.bare.createWebSocket(ctx.args[0], ctx.args[1], [
+			let rawurl = new _URL(ctx.args[0], client.url.href);
+			if (rawurl.protocol === "http:") {
+				rawurl = new _URL(
+					"ws:" + rawurl.href.substring(rawurl.protocol.length)
+				);
+			} else if (rawurl.protocol === "https:") {
+				rawurl = new _URL(
+					"wss:" + rawurl.href.substring(rawurl.protocol.length)
+				);
+			}
+
+			const requestHeaders: [string, string][] = [
 				["User-Agent", self.navigator.userAgent],
 				["Origin", client.url.origin],
-			]);
+			];
+			const cookies = client.context.cookieJar.getCookies(rawurl, false);
+			if (cookies) requestHeaders.push(["Cookie", cookies]);
+
+			const barews = client.bare.createWebSocket(
+				rawurl.href,
+				ctx.args[1],
+				requestHeaders
+			);
 			ctx.args[1]?.signal.addEventListener("abort", () => {
 				barews.close(1000, "");
 			});
 			const state: FakeWebSocketStreamState = {
-				protocol: "",
-				extensions: "",
-				url: ctx.args[0],
+				url: rawurl.href,
 				barews,
 
 				opened: new Promise((resolve, reject) => {
@@ -293,8 +311,8 @@ export default function (client: ScramjetClient, self: GlobalThis) {
 						resolve({
 							readable: state.readable,
 							writable: state.writable,
-							protocol: state.protocol,
-							extensions: state.extensions,
+							protocol: barews.protocol,
+							extensions: barews.extensions,
 						});
 					});
 					barews.addEventListener("error", (ev: Event) => {

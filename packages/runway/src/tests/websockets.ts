@@ -114,6 +114,64 @@ export default [
 		},
 	}),
 	serverTest({
+		name: "websockets-cross-origin-cookie-and-protocol",
+		hostname: "discord.com",
+		cleartextHosts: ["gateway.discord.gg"],
+		autoPass: false,
+		js: `
+			await fetch("/set-discord-cookie", { credentials: "include" });
+			await fetch("https://gateway.discord.gg/set-gateway-cookie", { credentials: "include" });
+
+			const socket = new WebSocket("wss://gateway.discord.gg/ws", "json");
+			socket.addEventListener("open", () => {
+				assert(socket.protocol === "json", "WebSocket.protocol should expose the negotiated protocol");
+			});
+			socket.addEventListener("message", (event) => {
+				const result = JSON.parse(event.data);
+				assert(result.cookie === "gateway_cookie=expected", "only gateway cookies should be sent");
+				assert(result.origin === "https://discord.com", "WebSocket Origin should be the page origin");
+				pass("cross-origin WebSocket cookies and protocol match browser behavior");
+				socket.close();
+			});
+			socket.addEventListener("error", () => {
+				fail("cross-origin WebSocket connection failed");
+			});
+		`,
+		async start(server) {
+			server.on("request", (request, response) => {
+				if (request.url === "/set-discord-cookie") {
+					response.writeHead(204, {
+						"Set-Cookie":
+							"discord_cookie=must-not-leak; Domain=.discord.com; Path=/; Secure; SameSite=None",
+					});
+					response.end();
+					return;
+				}
+				if (request.url === "/set-gateway-cookie") {
+					response.writeHead(204, {
+						"Set-Cookie": "gateway_cookie=expected; Domain=.discord.gg; Path=/; Secure; SameSite=None",
+					});
+					response.end();
+				}
+			});
+
+			const wss = new WebSocketServer({
+				server,
+				handleProtocols(protocols) {
+					return protocols.has("json") ? "json" : false;
+				},
+			});
+			wss.on("connection", (socket, request) => {
+				socket.send(
+					JSON.stringify({
+						cookie: request.headers.cookie || "",
+						origin: request.headers.origin || "",
+					}),
+				);
+			});
+		},
+	}),
+	serverTest({
 		name: "websockets-relative-url",
 		autoPass: false,
 		js: `
