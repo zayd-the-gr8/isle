@@ -114,7 +114,7 @@ export default [
 		},
 	}),
 	serverTest({
-		name: "websockets-cross-origin-cookie-and-protocol",
+		name: "websockets-cross-origin-cookie-and-subprotocol",
 		hostname: "discord.com",
 		cleartextHosts: ["gateway.discord.gg"],
 		autoPass: false,
@@ -123,14 +123,12 @@ export default [
 			await fetch("https://gateway.discord.gg/set-gateway-cookie", { credentials: "include" });
 
 			const socket = new WebSocket("wss://gateway.discord.gg/ws", "json");
-			socket.addEventListener("open", () => {
-				assert(socket.protocol === "json", "WebSocket.protocol should expose the negotiated protocol");
-			});
 			socket.addEventListener("message", (event) => {
 				const result = JSON.parse(event.data);
 				assert(result.cookie === "gateway_cookie=expected", "only gateway cookies should be sent");
 				assert(result.origin === "https://discord.com", "WebSocket Origin should be the page origin");
-				pass("cross-origin WebSocket cookies and protocol match browser behavior");
+				assert(result.protocol === "json", "the server should negotiate the requested subprotocol");
+				pass("cross-origin WebSocket cookies and subprotocol negotiation succeeded");
 				socket.close();
 			});
 			socket.addEventListener("error", () => {
@@ -166,6 +164,7 @@ export default [
 					JSON.stringify({
 						cookie: request.headers.cookie || "",
 						origin: request.headers.origin || "",
+						protocol: socket.protocol,
 					}),
 				);
 			});
