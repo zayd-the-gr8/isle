@@ -40,7 +40,7 @@ const DEFAULT_FILES: PlaygroundFile[] = [
   </head>
   <body>
     <main>
-      <h1>Scramjet Playground</h1>
+      <h1>zayds playground</h1>
       <p>Edit files on the left, then reload the preview.</p>
       <button id="btn">Click me</button>
       <pre id="out"></pre>
@@ -81,7 +81,7 @@ button {
 const button = document.getElementById("btn");
 if (button && out) {
   button.addEventListener("click", () => {
-    out.textContent = "Hello from fakeorigin assets served via Scramjet request hook.";
+    out.textContent = "Hello from earth; assets served via merc's request hook.❤🖤🌯";
   });
 }
 `,
