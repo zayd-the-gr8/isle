@@ -32,6 +32,7 @@ import type {
 	FrameErrorHooks,
 } from "./types";
 import { assertRuntimeScramjetVersion } from "./version";
+import { DEFAULT_PREFIX } from "./prefix";
 
 export { VERSION } from "./version";
 export { assertRuntimeScramjetVersion } from "./version";
@@ -46,7 +47,7 @@ export type Config = {
 };
 
 export const config: Config = {
-	prefix: "/~/sj/",
+	prefix: DEFAULT_PREFIX,
 	scramjetPath: "/scramjet/scramjet.js",
 	injectPath: "/controller/controller.inject.js",
 	wasmPath: "/scramjet/scramjet.wasm",
@@ -514,9 +515,13 @@ export class Controller {
 			}
 
 			if (e.data.$controller$swrevive) {
-				// if we just spawned the service worker, it will send this even though it's not actually dead
-				// TODO: pretty jank, fix at some point
-				if (this.guardServiceWorkerRevive) {
+				// Only re-register when the worker says this controller is missing.
+				// Replacing a live port would interrupt requests already in flight.
+				const { registered } = e.data.$controller$swrevive;
+				if (Array.isArray(registered)) {
+					if (registered.includes(this.id)) return;
+				} else if (this.guardServiceWorkerRevive) {
+					// Older workers don't report their registrations.
 					return;
 				}
 				this.setupMessagePort();
