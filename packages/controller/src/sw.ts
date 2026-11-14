@@ -234,10 +234,12 @@ export async function route(event: FetchEvent): Promise<Response> {
 		const tab = await waitForTab(url.pathname);
 		if (!tab) return fetch(event.request);
 
-		let controllerRequestTimedOut = false;
+		let timeoutId: ReturnType<typeof setTimeout> | undefined;
+		let timedOut = false;
 		try {
-			const clientId = event.clientId || event.resultingClientId;
-			const client = clientId ? await clients.get(clientId) : undefined;
+			const client = event.clientId
+				? await clients.get(event.clientId)
+				: undefined;
 			const rawheaders: RawHeaders = [...event.request.headers];
 			const request = tab.rpc.call(
 				"request",
@@ -253,7 +255,7 @@ export async function route(event: FetchEvent): Promise<Response> {
 					forceCrossOriginIsolated: false,
 					initialHeaders: rawheaders,
 					rawClientUrl: client ? client.url : undefined,
-					clientId,
+					clientId: event.clientId || event.resultingClientId,
 				},
 				event.request.body instanceof ReadableStream ||
 					// @ts-expect-error the types for fetchevent are messed up
@@ -261,28 +263,20 @@ export async function route(event: FetchEvent): Promise<Response> {
 					? [event.request.body]
 					: undefined
 			);
-			const response = await Promise.race([
-				request,
-				new Promise<never>((_, reject) =>
-					setTimeout(
-						() => {
-							controllerRequestTimedOut = true;
-							reject(
-								new Error("Controller request timed out")
-							);
-						},
-						CONTROLLER_REQUEST_TIMEOUT
-					)
-				),
-			]);
-
+			const timeout = new Promise<never>((_, reject) => {
+				timeoutId = setTimeout(() => {
+					timedOut = true;
+					reject(new Error("Controller request timed out"));
+				}, CONTROLLER_REQUEST_TIMEOUT);
+			});
+			const response = await Promise.race([request, timeout]);
 			return new Response(response.body, {
 				status: response.status,
 				statusText: response.statusText,
 				headers: response.headers,
 			});
 		} catch (e) {
-			if (retryable && attempt === 0 && controllerRequestTimedOut) {
+			if (retryable && attempt === 0 && timedOut) {
 				const index = tabs.indexOf(tab);
 				if (index !== -1) tabs.splice(index, 1);
 				await notifyReviveClients();
@@ -295,6 +289,8 @@ export async function route(event: FetchEvent): Promise<Response> {
 					status: 500,
 				}
 			);
+		} finally {
+			if (timeoutId !== undefined) clearTimeout(timeoutId);
 		}
 	}
 
