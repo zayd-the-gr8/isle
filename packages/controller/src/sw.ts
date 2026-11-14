@@ -234,6 +234,7 @@ export async function route(event: FetchEvent): Promise<Response> {
 		const tab = await waitForTab(url.pathname);
 		if (!tab) return fetch(event.request);
 
+		let controllerRequestTimedOut = false;
 		try {
 			const clientId = event.clientId || event.resultingClientId;
 			const client = clientId ? await clients.get(clientId) : undefined;
@@ -264,10 +265,12 @@ export async function route(event: FetchEvent): Promise<Response> {
 				request,
 				new Promise<never>((_, reject) =>
 					setTimeout(
-						() =>
+						() => {
+							controllerRequestTimedOut = true;
 							reject(
 								new Error("Controller request timed out")
-							),
+							);
+						},
 						CONTROLLER_REQUEST_TIMEOUT
 					)
 				),
@@ -279,7 +282,7 @@ export async function route(event: FetchEvent): Promise<Response> {
 				headers: response.headers,
 			});
 		} catch (e) {
-			if (retryable && attempt === 0) {
+			if (retryable && attempt === 0 && controllerRequestTimedOut) {
 				const index = tabs.indexOf(tab);
 				if (index !== -1) tabs.splice(index, 1);
 				await notifyReviveClients();
