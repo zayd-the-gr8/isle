@@ -150,16 +150,16 @@ async function startClientTelemetry() {
 	badge.setAttribute("aria-live", "polite");
 	badge.textContent = "active clients —";
 	badge.style.cssText =
-		"position:fixed;left:14px;bottom:14px;z-index:2147483647;padding:7px 11px;border:1px solid var(--badge-border,#333);border-radius:999px;background:var(--badge-bg,#111);color:var(--badge-text,#f5f5f5);box-shadow:0 6px 20px rgb(0 0 0 / 18%);font:600 12px/1.2 monospace;letter-spacing:.02em";
+		"position:fixed;left:14px;bottom:14px;z-index:2147483647;padding:7px 11px;border:1px solid var(--badge-border,#333);border-radius:999px;background:var(--badge-bg,#111);color:var(--badge-text,#f5f5f5);box-shadow:0 6px 20px rgb(0 0 0 / 18%);font:600 12px/1.2 'Bitcount Grid Single',monospace;letter-spacing:.02em";
 	document.body.append(badge);
 
 	const syncTheme = () => {
 		const root = document.querySelector<HTMLElement>(".app-root");
 		if (!root) return;
 		const styles = getComputedStyle(root);
-		badge.style.setProperty("--badge-bg", styles.getPropertyValue("--chrome-surface"));
-		badge.style.setProperty("--badge-border", styles.getPropertyValue("--chrome-border"));
-		badge.style.setProperty("--badge-text", styles.getPropertyValue("--chrome-text"));
+		badge.style.backgroundColor = styles.getPropertyValue("--chrome-surface").trim();
+		badge.style.borderColor = styles.getPropertyValue("--chrome-border").trim();
+		badge.style.color = styles.getPropertyValue("--chrome-text").trim();
 	};
 	syncTheme();
 	const root = document.querySelector(".app-root");
@@ -203,7 +203,7 @@ async function startClientTelemetry() {
 }
 
 App.style = css`
-	@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0");
+	@import url("https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single:wght@300..900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0");
 
 	:scope {
 		width: 100vw;
