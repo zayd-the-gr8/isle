@@ -227,7 +227,8 @@ export async function route(event: FetchEvent): Promise<Response> {
 	if (!tab) return fetch(event.request);
 
 	try {
-		const client = await clients.get(event.clientId);
+		const clientId = event.clientId || event.resultingClientId;
+		const client = clientId ? await clients.get(clientId) : undefined;
 
 		const rawheaders: RawHeaders = [...event.request.headers];
 
@@ -245,7 +246,7 @@ export async function route(event: FetchEvent): Promise<Response> {
 				forceCrossOriginIsolated: false,
 				initialHeaders: rawheaders,
 				rawClientUrl: client ? client.url : undefined,
-				clientId: event.clientId || event.resultingClientId,
+				clientId,
 			},
 			event.request.body instanceof ReadableStream ||
 				// @ts-expect-error the types for fetchevent are messed up
