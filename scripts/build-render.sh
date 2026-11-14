@@ -53,5 +53,6 @@ export OPTIMIZE_FOR_SIZE=1
 
 pnpm --filter @mercuryworkshop/scramjet rewriter:build
 pnpm --filter @mercuryworkshop/scramjet build
+pnpm --filter @mercuryworkshop/scramjet-controller build
 pnpm --filter @mercuryworkshop/scramjet-demo build
 bash scripts/install-wireproxy.sh
