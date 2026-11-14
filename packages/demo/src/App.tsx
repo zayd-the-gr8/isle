@@ -150,7 +150,7 @@ async function startClientTelemetry() {
 	badge.setAttribute("aria-live", "polite");
 	badge.textContent = "active clients —";
 	badge.style.cssText =
-		"position:fixed;left:14px;bottom:14px;z-index:2147483647;padding:7px 11px;border:1px solid var(--badge-border,#333);border-radius:999px;background:var(--badge-bg,#111);color:var(--badge-text,#f5f5f5);box-shadow:0 6px 20px rgb(0 0 0 / 18%);font:600 12px/1.2 'Bitcount Grid Single',monospace;letter-spacing:.02em";
+		"position:fixed;left:14px;bottom:14px;z-index:2147483647;color:var(--badge-text,#f5f5f5);font:600 12px/1.2 'Bitcount Grid Single',monospace;letter-spacing:.02em";
 	document.body.append(badge);
 
 	const syncTheme = () => {
@@ -158,8 +158,6 @@ async function startClientTelemetry() {
 		if (!root) return;
 		const apply = () => {
 			const styles = getComputedStyle(root);
-			badge.style.backgroundColor = styles.getPropertyValue("--chrome-surface").trim();
-			badge.style.borderColor = styles.getPropertyValue("--chrome-border").trim();
 			badge.style.color = styles.getPropertyValue("--chrome-text").trim();
 		};
 		requestAnimationFrame(apply);
@@ -168,6 +166,16 @@ async function startClientTelemetry() {
 	const root = document.querySelector(".app-root");
 	const observer = root ? new MutationObserver(syncTheme) : null;
 	if (root) observer?.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+	const isHomepageVisible = () => {
+		const activeTab = browserState.tabs.find((tab) => tab.id === browserState.activeTabId);
+		return document.querySelector(".browser-panel.active") !== null && activeTab?.isHomepage === true;
+	};
+	let publicVisible = false;
+	let preferenceEnabled = true;
+	const updateBadgeVisibility = () => {
+		badge.hidden = !publicVisible || !preferenceEnabled || !isHomepageVisible();
+	};
 
 	const userPreferenceEnabled = () => {
 		try {
@@ -195,7 +203,9 @@ async function startClientTelemetry() {
 				visible?: boolean;
 				activeClients?: number;
 			};
-			badge.hidden = stats.visible !== true || !userPreferenceEnabled();
+			publicVisible = stats.visible === true;
+			preferenceEnabled = userPreferenceEnabled();
+			updateBadgeVisibility();
 			if (stats.visible) badge.textContent = `active clients ${stats.activeClients ?? 0}`;
 		} catch (error) {
 			console.error("Failed to update client telemetry:", error);
@@ -203,6 +213,7 @@ async function startClientTelemetry() {
 	};
 	await heartbeat();
 	window.setInterval(heartbeat, 30_000);
+	window.setInterval(updateBadgeVisibility, 250);
 }
 
 App.style = css`
@@ -235,15 +246,9 @@ App.style = css`
 
 	.active-client-badge {
 		position: fixed;
-		z-index: 9999;
 		bottom: 14px;
 		left: 14px;
-		padding: 7px 11px;
-		border: 1px solid var(--badge-border, #333);
-		border-radius: 999px;
-		background: var(--badge-bg, #111);
 		color: var(--badge-text, #f5f5f5);
-		box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
 		font: 600 12px/1.2 "Bitcount Grid Single", monospace;
 		letter-spacing: .02em;
 	}
