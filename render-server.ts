@@ -39,7 +39,7 @@ const defaultMaintenanceState: MaintenanceState = {
 	message: "",
 	startAt: null,
 	endAt: null,
-	showClientCount: false
+	showClientCount: true
 };
 let localMaintenanceState = defaultMaintenanceState;
 
@@ -101,7 +101,7 @@ async function getMaintenanceState(): Promise<MaintenanceState> {
 			throw new Error("Maintenance storage contains invalid state.");
 		}
 		validateMaintenanceState(parsed);
-		return { ...parsed, showClientCount: parsed.showClientCount ?? false };
+		return { ...parsed, showClientCount: parsed.showClientCount ?? true };
 	}
 	return localMaintenanceState;
 }
