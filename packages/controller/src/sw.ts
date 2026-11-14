@@ -10,6 +10,7 @@ function makeId(): string {
 }
 
 const REVIVE_TIMEOUT = 5000;
+const CONTROLLER_REQUEST_TIMEOUT = 15000;
 
 const cookieResolvers: Record<string, (value: void) => void> = {};
 addEventListener("message", (e) => {
@@ -181,9 +182,7 @@ function findTab(pathname: string): ControllerReference | undefined {
 
 let revived = false;
 
-async function reviveClients() {
-	if (revived) return;
-	revived = true;
+async function notifyReviveClients() {
 	for (const client of await clients.matchAll({
 		type: "window",
 		includeUncontrolled: true,
@@ -192,6 +191,12 @@ async function reviveClients() {
 			$controller$swrevive: { registered: tabs.map((tab) => tab.id) },
 		});
 	}
+}
+
+async function reviveClients() {
+	if (revived) return;
+	revived = true;
+	await notifyReviveClients();
 }
 
 function waitForTab(
@@ -223,52 +228,74 @@ export function shouldRoute(event: FetchEvent): boolean {
 
 export async function route(event: FetchEvent): Promise<Response> {
 	const url = new URL(event.request.url);
-	const tab = await waitForTab(url.pathname);
-	if (!tab) return fetch(event.request);
+	const retryable = ["GET", "HEAD", "OPTIONS"].includes(event.request.method);
 
-	try {
-		const clientId = event.clientId || event.resultingClientId;
-		const client = clientId ? await clients.get(clientId) : undefined;
+	for (let attempt = 0; attempt < (retryable ? 2 : 1); attempt++) {
+		const tab = await waitForTab(url.pathname);
+		if (!tab) return fetch(event.request);
 
-		const rawheaders: RawHeaders = [...event.request.headers];
+		try {
+			const clientId = event.clientId || event.resultingClientId;
+			const client = clientId ? await clients.get(clientId) : undefined;
+			const rawheaders: RawHeaders = [...event.request.headers];
+			const request = tab.rpc.call(
+				"request",
+				{
+					rawUrl: event.request.url,
+					rawReferrer: event.request.referrer,
+					destination: event.request.destination,
+					mode: event.request.mode,
+					referrer: event.request.referrer,
+					method: event.request.method,
+					body: event.request.body,
+					cache: event.request.cache,
+					forceCrossOriginIsolated: false,
+					initialHeaders: rawheaders,
+					rawClientUrl: client ? client.url : undefined,
+					clientId,
+				},
+				event.request.body instanceof ReadableStream ||
+					// @ts-expect-error the types for fetchevent are messed up
+					event.request.body instanceof ArrayBuffer
+					? [event.request.body]
+					: undefined
+			);
+			const response = await Promise.race([
+				request,
+				new Promise<never>((_, reject) =>
+					setTimeout(
+						() =>
+							reject(
+								new Error("Controller request timed out")
+							),
+						CONTROLLER_REQUEST_TIMEOUT
+					)
+				),
+			]);
 
-		const response = await tab.rpc.call(
-			"request",
-			{
-				rawUrl: event.request.url,
-				rawReferrer: event.request.referrer,
-				destination: event.request.destination,
-				mode: event.request.mode,
-				referrer: event.request.referrer,
-				method: event.request.method,
-				body: event.request.body,
-				cache: event.request.cache,
-				forceCrossOriginIsolated: false,
-				initialHeaders: rawheaders,
-				rawClientUrl: client ? client.url : undefined,
-				clientId,
-			},
-			event.request.body instanceof ReadableStream ||
-				// @ts-expect-error the types for fetchevent are messed up
-				event.request.body instanceof ArrayBuffer
-				? [event.request.body]
-				: undefined
-		);
-
-		return new Response(response.body, {
-			status: response.status,
-			statusText: response.statusText,
-			headers: response.headers,
-		});
-	} catch (e) {
-		console.error("Service Worker error:", e);
-		return new Response(
-			"Internal Service Worker Error: " + (e as Error).message,
-			{
-				status: 500,
+			return new Response(response.body, {
+				status: response.status,
+				statusText: response.statusText,
+				headers: response.headers,
+			});
+		} catch (e) {
+			if (retryable && attempt === 0) {
+				const index = tabs.indexOf(tab);
+				if (index !== -1) tabs.splice(index, 1);
+				await notifyReviveClients();
+				continue;
 			}
-		);
+			console.error("Service Worker error:", e);
+			return new Response(
+				"Internal Service Worker Error: " + (e as Error).message,
+				{
+					status: 500,
+				}
+			);
+		}
 	}
+
+	return fetch(event.request);
 }
 
 addEventListener("install", () => {
