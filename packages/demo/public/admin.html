@@ -3,39 +3,197 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Maintenance control</title>
+		<title>admin</title>
 		<style>
-			:root { color-scheme: dark; font: 16px system-ui, sans-serif; }
-			body { max-width: 720px; margin: 3rem auto; padding: 0 1rem; background: #101010; color: #f5f5f5; }
-			main { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid #333; border-radius: 12px; background: #181818; }
-			label { display: grid; gap: .4rem; }
-			input, textarea, button { font: inherit; padding: .7rem; border: 1px solid #444; border-radius: 6px; background: #0c0c0c; color: inherit; }
-			textarea { min-height: 7rem; resize: vertical; }
-			button { cursor: pointer; background: #2b2b2b; }
+			@import url("https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single:wght@300..900&display=swap");
+
+			:root {
+				color-scheme: light;
+				font: 16px/1.5 "Bitcount Grid Single", monospace;
+				--ink: #17191c;
+				--muted: #68717b;
+				--line: rgb(23 25 28 / 12%);
+				--card: rgb(255 255 255 / 84%);
+				--accent: #ff5b36;
+				--accent-dark: #d83b1c;
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				min-height: 100vh;
+				margin: 0;
+				padding: 4rem 1.25rem;
+				overflow-x: hidden;
+				position: relative;
+				color: var(--ink);
+				background: #f7f8f6;
+			}
+
+			body::before,
+			body::after {
+				position: fixed;
+				z-index: -1;
+				display: block;
+				width: 32rem;
+				height: 32rem;
+				border-radius: 50%;
+				filter: blur(12px);
+				opacity: .6;
+				content: "";
+				animation: drift 18s ease-in-out infinite alternate;
+			}
+
+			body::before {
+				top: -12rem;
+				left: -8rem;
+				background: radial-gradient(circle, #ffd8c6 0, #ffd8c600 70%);
+			}
+
+			body::after {
+				right: -10rem;
+				bottom: -14rem;
+				background: radial-gradient(circle, #cce8ff 0, #cce8ff00 70%);
+				animation-delay: -7s;
+			}
+
+			.shell { width: min(760px, 100%); margin: 0 auto; }
+
+			.brand {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+
+			.eyebrow {
+				margin: 0 0 .35rem;
+				color: var(--accent-dark);
+				font-size: .75rem;
+				font-weight: 700;
+				letter-spacing: .16em;
+				text-transform: uppercase;
+			}
+
+			h1 { margin: 0; font-size: clamp(2rem, 7vw, 3.8rem); line-height: .95; letter-spacing: -.06em; }
+			.subtitle { max-width: 34rem; margin: .85rem 0 0; color: var(--muted); }
+
+			.signal {
+				display: grid;
+				width: 3.25rem;
+				height: 3.25rem;
+				flex: 0 0 auto;
+				place-items: center;
+				border: 1px solid var(--line);
+				border-radius: 1rem;
+				background: rgb(255 255 255 / 60%);
+				box-shadow: 0 12px 30px rgb(68 72 80 / 12%);
+				font-size: 1.5rem;
+			}
+
+			main {
+				display: grid;
+				gap: 1.25rem;
+				padding: clamp(1.25rem, 5vw, 2rem);
+				border: 1px solid var(--line);
+				border-radius: 1.5rem;
+				background: var(--card);
+				box-shadow: 0 24px 80px rgb(68 72 80 / 16%);
+				backdrop-filter: blur(18px);
+			}
+
+			.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+			.section-heading h2 { margin: 0; font-size: 1.25rem; }
+			.badge { padding: .3rem .6rem; border-radius: 999px; background: #e8f7ed; color: #23733c; font-size: .75rem; }
+			label { display: grid; gap: .5rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
+			.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+			input, textarea, button {
+				width: 100%;
+				font: inherit;
+				padding: .85rem 1rem;
+				border: 1px solid var(--line);
+				border-radius: .75rem;
+				outline: none;
+				background: rgb(255 255 255 / 78%);
+				color: var(--ink);
+				transition: border-color .2s, box-shadow .2s, transform .2s;
+			}
+			input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgb(255 91 54 / 14%); }
+			input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+			textarea { min-height: 8rem; resize: vertical; }
+			button { border: 0; cursor: pointer; background: var(--ink); color: #fff; font-weight: 700; }
+			button:hover { background: var(--accent-dark); transform: translateY(-1px); }
+			.secondary { background: #eceef0; color: var(--ink); }
+			.secondary:hover { background: #dfe3e6; }
 			.hidden { display: none; }
-			#status { min-height: 1.4rem; color: #f3c86b; }
+			#status { min-height: 1.5rem; margin: 0; color: var(--muted); }
+			#status.error { color: #b52e1b; }
+			#status.success { color: #23733c; }
+			.divider { height: 1px; background: var(--line); }
+			.actions { display: flex; gap: .75rem; }
+			.actions button { flex: 1; }
+			footer { margin-top: 1.25rem; color: var(--muted); font-size: .75rem; text-align: center; }
+
+			@keyframes drift {
+				from { transform: translate3d(-2%, -1%, 0) scale(1); }
+				to { transform: translate3d(5%, 4%, 0) scale(1.08); }
+			}
+
+			@media (max-width: 560px) {
+				body { padding-top: 2rem; }
+				.brand { align-items: flex-start; }
+				.field-grid { grid-template-columns: 1fr; }
+				.actions { flex-direction: column; }
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				*, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+			}
 		</style>
 	</head>
 	<body>
-		<main>
-			<h1>Maintenance control</h1>
-			<p id="status">Sign in to manage the public maintenance banner.</p>
+		<div class="shell">
+			<header class="brand">
+				<div>
+					<p class="eyebrow"></p>
+					<h1>admin thing bro</h1>
+					<p class="subtitle">youre not supposed to be here...</p>
+				</div>
+				<div class="signal" aria-hidden="true">✦</div>
+			</header>
+			<main>
+				<div class="section-heading">
+					<h2>Maintenance broadcast</h2>
+					<span class="badge">Secure panel</span>
+				</div>
+				<p id="status">Enter your administrator password to continue.</p>
 			<form id="login">
-				<label>Password <input id="password" type="password" autocomplete="current-password" required /></label>
-				<button>Sign in</button>
+					<label>Password <input id="password" type="password" autocomplete="current-password" placeholder="my unsecure password here" required /></label>
+					<button>auth</button>
 			</form>
 			<form id="settings" class="hidden">
-				<label><span><input id="enabled" type="checkbox" /> Enable maintenance banner</span></label>
-				<label>Message <textarea id="message" maxlength="2000"></textarea></label>
-				<label>Start date/time (optional) <input id="startAt" type="datetime-local" /></label>
-				<label>End date/time (optional) <input id="endAt" type="datetime-local" /></label>
-				<button>Save settings</button>
-				<button id="logout" type="button">Sign out</button>
+					<label><span><input id="enabled" type="checkbox" /> Show maintenance banner</span></label>
+					<label>Public message <textarea id="message" maxlength="2000" placeholder="Tell visitors what is happening..."></textarea></label>
+					<div class="field-grid">
+						<label>Start date/time <input id="startAt" type="datetime-local" /></label>
+						<label>End date/time <input id="endAt" type="datetime-local" /></label>
+					</div>
+					<div class="divider"></div>
+					<div class="actions">
+						<button>Publish changes</button>
+						<button id="logout" class="secondary" type="button">Sign out</button>
+					</div>
 			</form>
-		</main>
+			</main>
+			<footer>email me zayd@emailthing.xyz to claim as a og</footer>
+		</div>
 		<script>
 			const $ = (id) => document.getElementById(id);
-			const status = (message) => $("status").textContent = message;
+			const status = (message, kind = "") => {
+				$("status").textContent = message;
+				$("status").className = kind;
+			};
 			const toInput = (value) => value ? new Date(value).toISOString().slice(0, 16) : "";
 			const toIso = (value) => value ? new Date(value).toISOString() : null;
 			async function load() {
@@ -48,7 +206,7 @@
 				$("endAt").value = toInput(state.endAt);
 				$("login").classList.add("hidden");
 				$("settings").classList.remove("hidden");
-				status("Settings loaded.");
+				status("Settings loaded.", "success");
 			}
 			$("login").addEventListener("submit", async (event) => {
 				event.preventDefault();
@@ -57,9 +215,13 @@
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ password: $("password").value })
 				});
-				if (!response.ok) return status("Login failed.");
+				if (!response.ok) return status("Authentication failed. Try again.", "error");
 				$("password").value = "";
-				await load();
+				try {
+					await load();
+				} catch {
+					status("Could not load your settings.", "error");
+				}
 			});
 			$("settings").addEventListener("submit", async (event) => {
 				event.preventDefault();
@@ -73,7 +235,10 @@
 						endAt: toIso($("endAt").value)
 					})
 				});
-				status(response.ok ? "Settings saved." : "Save failed.");
+				status(
+					response.ok ? "Changes published successfully." : "Save failed. Try again.",
+					response.ok ? "success" : "error"
+				);
 			});
 			$("logout").addEventListener("click", async () => {
 				await fetch("/api/admin/logout", { method: "POST" });
