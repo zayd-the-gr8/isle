@@ -503,11 +503,11 @@ export function multiFrameTest(props: {
 						<!DOCTYPE html>
 						<html>
 							<head>
+								<script src="/${id}.js"></script>
 							</head>
 							<body>
 								<h1>Frame ${originid}/${id}</h1>
 								${subframesHtml.join("<br>")}
-								<script src="/${id}.js"></script>
 							</body>
 						</html>
 					`);
