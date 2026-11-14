@@ -545,7 +545,10 @@ export class Controller {
 		this.port.addEventListener("message", this.onTabChannelMessage);
 		this.port.start();
 
-		this.serviceWorkerController.postMessage(
+		const serviceWorker =
+			navigator.serviceWorker.controller ?? this.serviceWorkerController;
+		this.serviceWorkerController = serviceWorker;
+		serviceWorker.postMessage(
 			{
 				$controller$init: {
 					prefix: this.prefix,

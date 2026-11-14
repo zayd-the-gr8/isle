@@ -184,7 +184,10 @@ let revived = false;
 async function reviveClients() {
 	if (revived) return;
 	revived = true;
-	for (const client of await clients.matchAll()) {
+	for (const client of await clients.matchAll({
+		type: "window",
+		includeUncontrolled: true,
+	})) {
 		client.postMessage({
 			$controller$swrevive: { registered: tabs.map((tab) => tab.id) },
 		});
