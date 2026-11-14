@@ -149,7 +149,9 @@ async function startClientTelemetry() {
 	badge.className = "active-client-badge";
 	badge.setAttribute("aria-live", "polite");
 	badge.textContent = "active clients —";
-	(document.querySelector(".app-root") ?? document.body).append(badge);
+	badge.style.cssText =
+		"position:fixed;left:14px;bottom:14px;z-index:2147483647;padding:7px 11px;border:1px solid var(--badge-border,#333);border-radius:999px;background:var(--badge-bg,#111);color:var(--badge-text,#f5f5f5);box-shadow:0 6px 20px rgb(0 0 0 / 18%);font:600 12px/1.2 monospace;letter-spacing:.02em";
+	document.body.append(badge);
 
 	const syncTheme = () => {
 		const root = document.querySelector<HTMLElement>(".app-root");
