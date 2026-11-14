@@ -487,10 +487,6 @@ export class Controller {
 		);
 		this.setupMessagePort();
 
-		navigator.serviceWorker.addEventListener("controllerchange", () => {
-			this.setupMessagePort();
-		});
-
 		navigator.serviceWorker.addEventListener("message", (e) => {
 			if (
 				e.data?.$controller$setCookie &&
