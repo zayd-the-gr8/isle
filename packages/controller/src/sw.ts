@@ -10,7 +10,6 @@ function makeId(): string {
 }
 
 const REVIVE_TIMEOUT = 5000;
-const CONTROLLER_REQUEST_TIMEOUT = 15000;
 
 const cookieResolvers: Record<string, (value: void) => void> = {};
 addEventListener("message", (e) => {
@@ -228,74 +227,50 @@ export function shouldRoute(event: FetchEvent): boolean {
 
 export async function route(event: FetchEvent): Promise<Response> {
 	const url = new URL(event.request.url);
-	const retryable = ["GET", "HEAD", "OPTIONS"].includes(event.request.method);
+	const tab = await waitForTab(url.pathname);
+	if (!tab) return fetch(event.request);
 
-	for (let attempt = 0; attempt < (retryable ? 2 : 1); attempt++) {
-		const tab = await waitForTab(url.pathname);
-		if (!tab) return fetch(event.request);
+	try {
+		const clientId = event.clientId || event.resultingClientId;
+		const client = clientId ? await clients.get(clientId) : undefined;
+		const rawheaders: RawHeaders = [...event.request.headers];
+		const response = await tab.rpc.call(
+			"request",
+			{
+				rawUrl: event.request.url,
+				rawReferrer: event.request.referrer,
+				destination: event.request.destination,
+				mode: event.request.mode,
+				referrer: event.request.referrer,
+				method: event.request.method,
+				body: event.request.body,
+				cache: event.request.cache,
+				forceCrossOriginIsolated: false,
+				initialHeaders: rawheaders,
+				rawClientUrl: client ? client.url : undefined,
+				clientId,
+			},
+			event.request.body instanceof ReadableStream ||
+				// @ts-expect-error the types for fetchevent are messed up
+				event.request.body instanceof ArrayBuffer
+				? [event.request.body]
+				: undefined
+		);
 
-		let timeoutId: ReturnType<typeof setTimeout> | undefined;
-		let timedOut = false;
-		try {
-			const clientId = event.clientId || event.resultingClientId;
-			const client = clientId
-				? await clients.get(clientId)
-				: undefined;
-			const rawheaders: RawHeaders = [...event.request.headers];
-			const request = tab.rpc.call(
-				"request",
-				{
-					rawUrl: event.request.url,
-					rawReferrer: event.request.referrer,
-					destination: event.request.destination,
-					mode: event.request.mode,
-					referrer: event.request.referrer,
-					method: event.request.method,
-					body: event.request.body,
-					cache: event.request.cache,
-					forceCrossOriginIsolated: false,
-					initialHeaders: rawheaders,
-					rawClientUrl: client ? client.url : undefined,
-					clientId,
-				},
-				event.request.body instanceof ReadableStream ||
-					// @ts-expect-error the types for fetchevent are messed up
-					event.request.body instanceof ArrayBuffer
-					? [event.request.body]
-					: undefined
-			);
-			const timeout = new Promise<never>((_, reject) => {
-				timeoutId = setTimeout(() => {
-					timedOut = true;
-					reject(new Error("Controller request timed out"));
-				}, CONTROLLER_REQUEST_TIMEOUT);
-			});
-			const response = await Promise.race([request, timeout]);
-			return new Response(response.body, {
-				status: response.status,
-				statusText: response.statusText,
-				headers: response.headers,
-			});
-		} catch (e) {
-			if (retryable && attempt === 0 && timedOut) {
-				const index = tabs.indexOf(tab);
-				if (index !== -1) tabs.splice(index, 1);
-				await notifyReviveClients();
-				continue;
+		return new Response(response.body, {
+			status: response.status,
+			statusText: response.statusText,
+			headers: response.headers,
+		});
+	} catch (e) {
+		console.error("Service Worker error:", e);
+		return new Response(
+			"Internal Service Worker Error: " + (e as Error).message,
+			{
+				status: 500,
 			}
-			console.error("Service Worker error:", e);
-			return new Response(
-				"Internal Service Worker Error: " + (e as Error).message,
-				{
-					status: 500,
-				}
-			);
-		} finally {
-			if (timeoutId !== undefined) clearTimeout(timeoutId);
-		}
+		);
 	}
-
-	return fetch(event.request);
 }
 
 addEventListener("install", () => {
