@@ -1,6 +1,7 @@
 import { createReadStream } from "node:fs";
 import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import http from "node:http";
 import net from "node:net";
 import { tmpdir } from "node:os";
@@ -17,6 +18,133 @@ const wispPath = "/wisp/";
 const maxWispConnections = 32;
 const maxHttpConnections = 96;
 const wireproxyAddress = { host: "127.0.0.1", port: 25344 };
+const maintenanceKey = "scramjet:maintenance";
+const adminPassword = process.env.MAINTENANCE_ADMIN_PASSWORD?.trim();
+const adminSessions = new Set<string>();
+
+type MaintenanceState = {
+	enabled: boolean;
+	message: string;
+	startAt: string | null;
+	endAt: string | null;
+};
+
+const defaultMaintenanceState: MaintenanceState = {
+	enabled: false,
+	message: "",
+	startAt: null,
+	endAt: null
+};
+let localMaintenanceState = defaultMaintenanceState;
+
+function isMaintenanceState(value: unknown): value is MaintenanceState {
+	if (!value || typeof value !== "object") return false;
+	const state = value as Partial<MaintenanceState>;
+	return (
+		typeof state.enabled === "boolean" &&
+		typeof state.message === "string" &&
+		(state.startAt === null || typeof state.startAt === "string") &&
+		(state.endAt === null || typeof state.endAt === "string")
+	);
+}
+
+function validateMaintenanceState(state: MaintenanceState): void {
+	if (state.message.length > 2000) {
+		throw new Error("Maintenance message is too long.");
+	}
+	const starts = state.startAt ? Date.parse(state.startAt) : null;
+	const ends = state.endAt ? Date.parse(state.endAt) : null;
+	if (starts !== null && !Number.isFinite(starts)) {
+		throw new Error("Start date is invalid.");
+	}
+	if (ends !== null && !Number.isFinite(ends)) {
+		throw new Error("End date is invalid.");
+	}
+	if (starts !== null && ends !== null && ends < starts) {
+		throw new Error("End date must be after the start date.");
+	}
+}
+
+async function maintenanceStore(command: string[]): Promise<string | null> {
+	const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+	const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+	if (!url || !token) return null;
+	const response = await fetch(url, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${token}`,
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify(command),
+		signal: AbortSignal.timeout(5000)
+	});
+	if (!response.ok) {
+		throw new Error(`Maintenance storage returned HTTP ${response.status}.`);
+	}
+	const payload = (await response.json()) as { result?: unknown };
+	return typeof payload.result === "string" ? payload.result : null;
+}
+
+async function getMaintenanceState(): Promise<MaintenanceState> {
+	const stored = await maintenanceStore(["GET", maintenanceKey]);
+	if (stored) {
+		const parsed: unknown = JSON.parse(stored);
+		if (!isMaintenanceState(parsed)) {
+			throw new Error("Maintenance storage contains invalid state.");
+		}
+		validateMaintenanceState(parsed);
+		return parsed;
+	}
+	return localMaintenanceState;
+}
+
+async function setMaintenanceState(state: MaintenanceState): Promise<void> {
+	validateMaintenanceState(state);
+	const serialized = JSON.stringify(state);
+	const stored = await maintenanceStore(["SET", maintenanceKey, serialized]);
+	if (
+		process.env.UPSTASH_REDIS_REST_URL?.trim() &&
+		process.env.UPSTASH_REDIS_REST_TOKEN?.trim() &&
+		stored === null
+	) {
+		throw new Error("Maintenance storage did not confirm the update.");
+	}
+	localMaintenanceState = state;
+}
+
+function maintenanceIsActive(state: MaintenanceState): boolean {
+	const now = Date.now();
+	const starts = state.startAt ? Date.parse(state.startAt) : Number.NaN;
+	const ends = state.endAt ? Date.parse(state.endAt) : Number.NaN;
+	return (
+		state.enabled &&
+		(!state.startAt || Number.isFinite(starts) && now >= starts) &&
+		(!state.endAt || Number.isFinite(ends) && now <= ends)
+	);
+}
+
+function cookieValue(request: http.IncomingMessage, name: string): string | null {
+	const cookies = request.headers.cookie?.split(";") ?? [];
+	for (const cookie of cookies) {
+		const [key, ...value] = cookie.trim().split("=");
+		if (key === name) return decodeURIComponent(value.join("="));
+	}
+	return null;
+}
+
+function isAdmin(request: http.IncomingMessage): boolean {
+	const session = cookieValue(request, "maintenance_admin");
+	return session !== null && adminSessions.has(session);
+}
+
+function sameSecret(input: string, expected: string): boolean {
+	const inputBuffer = Buffer.from(input);
+	const expectedBuffer = Buffer.from(expected);
+	return (
+		inputBuffer.length === expectedBuffer.length &&
+		timingSafeEqual(inputBuffer, expectedBuffer)
+	);
+}
 
 if (!Number.isInteger(port) || port < 1 || port > 65535) {
 	throw new RangeError(`Invalid PORT: ${process.env.PORT}`);
@@ -270,6 +398,28 @@ function rejectUpgrade(socket: Duplex, status: string) {
 	socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`);
 }
 
+function readJson(request: http.IncomingMessage): Promise<unknown> {
+	return new Promise((resolve, reject) => {
+		let body = "";
+		request.setEncoding("utf8");
+		request.on("data", (chunk: string) => {
+			body += chunk;
+			if (body.length > 32_000) {
+				reject(new Error("Request body is too large."));
+				request.destroy();
+			}
+		});
+		request.on("end", () => {
+			try {
+				resolve(JSON.parse(body));
+			} catch {
+				reject(new Error("Request body must be valid JSON."));
+			}
+		});
+		request.on("error", reject);
+	});
+}
+
 const server = http.createServer((request, response) => {
 	let pathname: string;
 	try {
@@ -281,6 +431,97 @@ const server = http.createServer((request, response) => {
 
 	if (pathname === "/healthz") {
 		respond(response, 200, "ok");
+		return;
+	}
+	if (pathname === "/api/maintenance" && request.method === "GET") {
+		void getMaintenanceState()
+			.then((state) =>
+				respond(
+					response,
+					200,
+					JSON.stringify({
+						...state,
+						active: maintenanceIsActive(state)
+					}),
+					{ "Content-Type": "application/json; charset=utf-8" }
+				)
+			)
+			.catch((error: unknown) => {
+				console.error("Failed to read maintenance state:", error);
+				respond(response, 503, "Maintenance status unavailable.");
+			});
+		return;
+	}
+	if (pathname === "/api/admin/login" && request.method === "POST") {
+		void readJson(request)
+			.then((body: unknown) => {
+				const password =
+					typeof body === "object" && body !== null && "password" in body
+						? body.password
+						: undefined;
+				if (
+					!adminPassword ||
+					typeof password !== "string" ||
+					!sameSecret(password, adminPassword)
+				) {
+					respond(response, 401, "Invalid administrator password.");
+					return;
+				}
+				const session = randomBytes(32).toString("base64url");
+				adminSessions.add(session);
+				respond(response, 200, JSON.stringify({ ok: true }), {
+					"Content-Type": "application/json; charset=utf-8",
+					"Set-Cookie": `maintenance_admin=${encodeURIComponent(session)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`
+				});
+			})
+			.catch((error: unknown) => respond(response, 400, String(error)));
+		return;
+	}
+	if (pathname === "/api/admin/logout" && request.method === "POST") {
+		const session = cookieValue(request, "maintenance_admin");
+		if (session) adminSessions.delete(session);
+		respond(response, 204, "", {
+			"Set-Cookie": "maintenance_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"
+		});
+		return;
+	}
+	if (pathname === "/api/admin/maintenance" && request.method === "GET") {
+		if (!isAdmin(request)) {
+			respond(response, 401, "Administrator login required.");
+			return;
+		}
+		void getMaintenanceState()
+			.then((state) =>
+				respond(response, 200, JSON.stringify(state), {
+					"Content-Type": "application/json; charset=utf-8"
+				})
+			)
+			.catch((error: unknown) => {
+				console.error("Failed to read admin maintenance state:", error);
+				respond(response, 503, "Maintenance state unavailable.");
+			});
+		return;
+	}
+	if (pathname === "/api/admin/maintenance" && request.method === "PUT") {
+		if (!isAdmin(request)) {
+			respond(response, 401, "Administrator login required.");
+			return;
+		}
+		void readJson(request)
+			.then(async (body: unknown) => {
+				if (!isMaintenanceState(body)) {
+					respond(response, 400, "Invalid maintenance settings.");
+					return;
+				}
+				await setMaintenanceState(body);
+				respond(response, 200, JSON.stringify(body), {
+					"Content-Type": "application/json; charset=utf-8"
+				});
+			})
+			.catch((error: unknown) => {
+				console.error("Failed to update maintenance state:", error);
+				respond(response, 400, "Could not save maintenance settings.");
+			});
 		return;
 	}
 	if (pathname === wispPath || pathname.startsWith(wispPath)) {

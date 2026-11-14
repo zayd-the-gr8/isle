@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Maintenance control</title>
+		<style>
+			:root { color-scheme: dark; font: 16px system-ui, sans-serif; }
+			body { max-width: 720px; margin: 3rem auto; padding: 0 1rem; background: #101010; color: #f5f5f5; }
+			main { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid #333; border-radius: 12px; background: #181818; }
+			label { display: grid; gap: .4rem; }
+			input, textarea, button { font: inherit; padding: .7rem; border: 1px solid #444; border-radius: 6px; background: #0c0c0c; color: inherit; }
+			textarea { min-height: 7rem; resize: vertical; }
+			button { cursor: pointer; background: #2b2b2b; }
+			.hidden { display: none; }
+			#status { min-height: 1.4rem; color: #f3c86b; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Maintenance control</h1>
+			<p id="status">Sign in to manage the public maintenance banner.</p>
+			<form id="login">
+				<label>Password <input id="password" type="password" autocomplete="current-password" required /></label>
+				<button>Sign in</button>
+			</form>
+			<form id="settings" class="hidden">
+				<label><span><input id="enabled" type="checkbox" /> Enable maintenance banner</span></label>
+				<label>Message <textarea id="message" maxlength="2000"></textarea></label>
+				<label>Start date/time (optional) <input id="startAt" type="datetime-local" /></label>
+				<label>End date/time (optional) <input id="endAt" type="datetime-local" /></label>
+				<button>Save settings</button>
+				<button id="logout" type="button">Sign out</button>
+			</form>
+		</main>
+		<script>
+			const $ = (id) => document.getElementById(id);
+			const status = (message) => $("status").textContent = message;
+			const toInput = (value) => value ? new Date(value).toISOString().slice(0, 16) : "";
+			const toIso = (value) => value ? new Date(value).toISOString() : null;
+			async function load() {
+				const response = await fetch("/api/admin/maintenance");
+				if (!response.ok) throw new Error("Not signed in");
+				const state = await response.json();
+				$("enabled").checked = state.enabled;
+				$("message").value = state.message;
+				$("startAt").value = toInput(state.startAt);
+				$("endAt").value = toInput(state.endAt);
+				$("login").classList.add("hidden");
+				$("settings").classList.remove("hidden");
+				status("Settings loaded.");
+			}
+			$("login").addEventListener("submit", async (event) => {
+				event.preventDefault();
+				const response = await fetch("/api/admin/login", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ password: $("password").value })
+				});
+				if (!response.ok) return status("Login failed.");
+				$("password").value = "";
+				await load();
+			});
+			$("settings").addEventListener("submit", async (event) => {
+				event.preventDefault();
+				const response = await fetch("/api/admin/maintenance", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						enabled: $("enabled").checked,
+						message: $("message").value,
+						startAt: toIso($("startAt").value),
+						endAt: toIso($("endAt").value)
+					})
+				});
+				status(response.ok ? "Settings saved." : "Save failed.");
+			});
+			$("logout").addEventListener("click", async () => {
+				await fetch("/api/admin/logout", { method: "POST" });
+				location.reload();
+			});
+			load().catch(() => {});
+		</script>
+	</body>
+</html>

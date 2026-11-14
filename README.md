@@ -42,3 +42,9 @@ The Render web service can route Wisp TCP connections through [Wireproxy](https:
 To enable it, add a secret environment variable named `WIREGUARD_CONFIG` in the Render dashboard and paste the complete WireGuard client config, including its `[Interface]` and `[Peer]` sections. Redeploy the service. Wireproxy listens only on `127.0.0.1`; its SOCKS port is not exposed publicly. Without this variable, the service keeps its normal direct-egress behavior. An invalid config prevents startup instead of silently falling back to direct egress.
 
 The Render build downloads a pinned Wireproxy release and verifies its checksum. Wisp UDP streams remain disabled. The tunnel's availability and exit location depend on the WireGuard peer you configure; Render does not provision a VPN endpoint or guarantee that a given peer is reachable.
+
+## Maintenance controls
+
+The deployed service includes a password-protected control panel at `/admin.html`. Set the Render secret `MAINTENANCE_ADMIN_PASSWORD` before using it. The panel controls the banner message and optional start/end times; visitors see the banner while it is active.
+
+For settings to survive restarts and redeploys, configure an Upstash Redis database and add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` as Render secrets. Without those variables, settings are kept only in the running process and reset when the service restarts.

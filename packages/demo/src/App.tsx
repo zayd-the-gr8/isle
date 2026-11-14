@@ -16,6 +16,7 @@ const App: Component<
 	this.activeTab ??= "browser";
 	this.gamesLoaded ??= false;
 	cx.mount = () => {
+		void loadMaintenanceBanner();
 		window.addEventListener("scramjet-demo-open-requests", () => {
 			this.activeTab = "requests";
 		});
@@ -102,6 +103,37 @@ const App: Component<
 		</div>
 	);
 };
+
+async function loadMaintenanceBanner() {
+	try {
+		const response = await fetch("/api/maintenance", { cache: "no-store" });
+		if (!response.ok) return;
+		const state = (await response.json()) as {
+			active?: boolean;
+			message?: string;
+			endAt?: string | null;
+		};
+		if (!state.active) return;
+
+		const banner = document.createElement("aside");
+		banner.setAttribute("role", "status");
+		banner.style.cssText =
+			"position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:10000;width:min(680px,calc(100% - 24px));padding:14px 18px;border:1px solid #d6a84f;border-radius:10px;background:#30250f;color:#fff4d0;box-shadow:0 8px 30px #0008;font:14px/1.45 system-ui,sans-serif";
+		const title = document.createElement("strong");
+		title.textContent = "Maintenance notice";
+		const message = document.createElement("div");
+		message.textContent = state.message || "The site is currently undergoing maintenance.";
+		banner.append(title, message);
+		if (state.endAt) {
+			const end = document.createElement("small");
+			end.textContent = ` Expected to end: ${new Date(state.endAt).toLocaleString()}`;
+			banner.append(end);
+		}
+		document.body.append(banner);
+	} catch (error) {
+		console.error("Failed to load maintenance status:", error);
+	}
+}
 
 App.style = css`
 	@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0");
