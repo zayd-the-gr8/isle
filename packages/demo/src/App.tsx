@@ -156,10 +156,13 @@ async function startClientTelemetry() {
 	const syncTheme = () => {
 		const root = document.querySelector<HTMLElement>(".app-root");
 		if (!root) return;
-		const styles = getComputedStyle(root);
-		badge.style.backgroundColor = styles.getPropertyValue("--chrome-surface").trim();
-		badge.style.borderColor = styles.getPropertyValue("--chrome-border").trim();
-		badge.style.color = styles.getPropertyValue("--chrome-text").trim();
+		const apply = () => {
+			const styles = getComputedStyle(root);
+			badge.style.backgroundColor = styles.getPropertyValue("--chrome-surface").trim();
+			badge.style.borderColor = styles.getPropertyValue("--chrome-border").trim();
+			badge.style.color = styles.getPropertyValue("--chrome-text").trim();
+		};
+		requestAnimationFrame(apply);
 	};
 	syncTheme();
 	const root = document.querySelector(".app-root");
