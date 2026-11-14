@@ -232,7 +232,7 @@ export async function route(event: FetchEvent): Promise<Response> {
 
 	try {
 		const clientId = event.clientId || event.resultingClientId;
-		const client = clientId ? await clients.get(clientId) : undefined;
+		const client = event.clientId ? await clients.get(event.clientId) : undefined;
 		const rawheaders: RawHeaders = [...event.request.headers];
 		const response = await tab.rpc.call(
 			"request",
