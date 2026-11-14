@@ -89,11 +89,13 @@ type TabCloak = keyof typeof TAB_CLOAKS;
 type HomepagePreferences = {
 	theme: HomepageTheme;
 	cloak: TabCloak;
+	showClientCount: boolean;
 };
 
 const DEFAULT_HOMEPAGE_PREFERENCES: HomepagePreferences = {
 	theme: "stark-night",
 	cloak: "none",
+	showClientCount: true,
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -121,6 +123,7 @@ function readHomepagePreferences(): HomepagePreferences {
 		return {
 			theme: isHomepageTheme(parsed.theme) ? parsed.theme : DEFAULT_HOMEPAGE_PREFERENCES.theme,
 			cloak: isTabCloak(parsed.cloak) ? parsed.cloak : DEFAULT_HOMEPAGE_PREFERENCES.cloak,
+			showClientCount: parsed.showClientCount !== false,
 		};
 	} catch (error) {
 		console.error("Unable to load saved homepage preferences.", error);
@@ -636,6 +639,7 @@ const BrowserView: Component<
 			const updatedPreferences: HomepagePreferences = {
 				theme: nextSettings.theme,
 				cloak: nextSettings.cloak,
+				showClientCount: nextSettings.showClientCount !== false,
 			};
 			preferences.theme = updatedPreferences.theme;
 			preferences.cloak = updatedPreferences.cloak;

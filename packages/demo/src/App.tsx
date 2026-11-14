@@ -17,6 +17,7 @@ const App: Component<
 	this.gamesLoaded ??= false;
 	cx.mount = () => {
 		void loadMaintenanceBanner();
+		void startClientTelemetry();
 		window.addEventListener("scramjet-demo-open-requests", () => {
 			this.activeTab = "requests";
 		});
@@ -129,10 +130,74 @@ async function loadMaintenanceBanner() {
 			end.textContent = ` Expected to end: ${new Date(state.endAt).toLocaleString()}`;
 			banner.append(end);
 		}
+
 		document.body.append(banner);
 	} catch (error) {
 		console.error("Failed to load maintenance status:", error);
 	}
+}
+
+async function startClientTelemetry() {
+	const storageKey = "scramjet-demo-client-id";
+	let clientId = sessionStorage.getItem(storageKey);
+	if (!clientId) {
+		clientId = crypto.randomUUID();
+		sessionStorage.setItem(storageKey, clientId);
+	}
+
+	const badge = document.createElement("aside");
+	badge.className = "active-client-badge";
+	badge.setAttribute("aria-live", "polite");
+	badge.textContent = "active clients —";
+	(document.querySelector(".app-root") ?? document.body).append(badge);
+
+	const syncTheme = () => {
+		const root = document.querySelector<HTMLElement>(".app-root");
+		if (!root) return;
+		const styles = getComputedStyle(root);
+		badge.style.setProperty("--badge-bg", styles.getPropertyValue("--chrome-surface"));
+		badge.style.setProperty("--badge-border", styles.getPropertyValue("--chrome-border"));
+		badge.style.setProperty("--badge-text", styles.getPropertyValue("--chrome-text"));
+	};
+	syncTheme();
+	const root = document.querySelector(".app-root");
+	const observer = root ? new MutationObserver(syncTheme) : null;
+	if (root) observer?.observe(root, { attributes: true, attributeFilter: ["class"] });
+
+	const userPreferenceEnabled = () => {
+		try {
+			const raw = localStorage.getItem("scramjet-homepage-preferences-v1");
+			if (!raw) return true;
+			const parsed = JSON.parse(raw) as { showClientCount?: unknown };
+			return parsed.showClientCount !== false;
+		} catch (error) {
+			console.error("Failed to read active client preference:", error);
+			return true;
+		}
+	};
+
+	const heartbeat = async () => {
+		try {
+			await fetch("/api/client-heartbeat", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ id: clientId }),
+				keepalive: true
+			});
+			const response = await fetch("/api/client-stats", { cache: "no-store" });
+			if (!response.ok) return;
+			const stats = (await response.json()) as {
+				visible?: boolean;
+				activeClients?: number;
+			};
+			badge.hidden = stats.visible !== true || !userPreferenceEnabled();
+			if (stats.visible) badge.textContent = `active clients ${stats.activeClients ?? 0}`;
+		} catch (error) {
+			console.error("Failed to update client telemetry:", error);
+		}
+	};
+	await heartbeat();
+	window.setInterval(heartbeat, 30_000);
 }
 
 App.style = css`
@@ -161,6 +226,21 @@ App.style = css`
 		--chrome-muted: #aaa;
 		--chrome-hover: #292929;
 		--chrome-accent: #aaa;
+	}
+
+	.active-client-badge {
+		position: fixed;
+		z-index: 9999;
+		bottom: 14px;
+		left: 14px;
+		padding: 7px 11px;
+		border: 1px solid var(--badge-border, #333);
+		border-radius: 999px;
+		background: var(--badge-bg, #111);
+		color: var(--badge-text, #f5f5f5);
+		box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+		font: 600 12px/1.2 "Bitcount Grid Single", monospace;
+		letter-spacing: .02em;
 	}
 	:scope.theme-stark-day {
 		--chrome-bg: #f4f3ef;

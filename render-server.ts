@@ -19,21 +19,27 @@ const maxWispConnections = 32;
 const maxHttpConnections = 96;
 const wireproxyAddress = { host: "127.0.0.1", port: 25344 };
 const maintenanceKey = "scramjet:maintenance";
+const clientHeartbeatTtlMs = 90_000;
 const adminPassword = process.env.MAINTENANCE_ADMIN_PASSWORD?.trim();
 const adminSessions = new Set<string>();
+const activeClients = new Map<string, number>();
+let totalDownloadedBytes = 0;
+const startedAt = new Date().toISOString();
 
 type MaintenanceState = {
 	enabled: boolean;
 	message: string;
 	startAt: string | null;
 	endAt: string | null;
+	showClientCount: boolean;
 };
 
 const defaultMaintenanceState: MaintenanceState = {
 	enabled: false,
 	message: "",
 	startAt: null,
-	endAt: null
+	endAt: null,
+	showClientCount: false
 };
 let localMaintenanceState = defaultMaintenanceState;
 
@@ -44,7 +50,9 @@ function isMaintenanceState(value: unknown): value is MaintenanceState {
 		typeof state.enabled === "boolean" &&
 		typeof state.message === "string" &&
 		(state.startAt === null || typeof state.startAt === "string") &&
-		(state.endAt === null || typeof state.endAt === "string")
+		(state.endAt === null || typeof state.endAt === "string") &&
+		(state.showClientCount === undefined ||
+			typeof state.showClientCount === "boolean")
 	);
 }
 
@@ -93,7 +101,7 @@ async function getMaintenanceState(): Promise<MaintenanceState> {
 			throw new Error("Maintenance storage contains invalid state.");
 		}
 		validateMaintenanceState(parsed);
-		return parsed;
+		return { ...parsed, showClientCount: parsed.showClientCount ?? false };
 	}
 	return localMaintenanceState;
 }
@@ -121,6 +129,28 @@ function maintenanceIsActive(state: MaintenanceState): boolean {
 		(!state.startAt || Number.isFinite(starts) && now >= starts) &&
 		(!state.endAt || Number.isFinite(ends) && now <= ends)
 	);
+}
+
+function pruneActiveClients(): number {
+	const cutoff = Date.now() - clientHeartbeatTtlMs;
+	for (const [id, lastSeen] of activeClients) {
+		if (lastSeen < cutoff) activeClients.delete(id);
+	}
+	return activeClients.size;
+}
+
+function clientStats() {
+	const activeDownloadedBytes = [...wispSockets].reduce((total, socket) => {
+		const bytesWritten = (socket as Duplex & { bytesWritten?: number }).bytesWritten;
+		return total + (typeof bytesWritten === "number" ? bytesWritten : 0);
+	}, 0);
+	return {
+		activeClients: pruneActiveClients(),
+		wispConnections: wispSockets.size,
+		totalDownloadedBytes: totalDownloadedBytes + activeDownloadedBytes,
+		startedAt,
+		uptimeSeconds: Math.floor((Date.now() - Date.parse(startedAt)) / 1000)
+	};
 }
 
 function cookieValue(request: http.IncomingMessage, name: string): string | null {
@@ -452,6 +482,44 @@ const server = http.createServer((request, response) => {
 			});
 		return;
 	}
+	if (pathname === "/api/client-heartbeat" && request.method === "POST") {
+		void readJson(request)
+			.then((body: unknown) => {
+				const id =
+					typeof body === "object" && body !== null && "id" in body
+						? body.id
+						: undefined;
+				if (typeof id !== "string" || id.length < 16 || id.length > 128) {
+					respond(response, 400, "Invalid client id.");
+					return;
+				}
+				activeClients.set(id, Date.now());
+				respond(response, 204, "");
+			})
+			.catch((error: unknown) => respond(response, 400, String(error)));
+		return;
+	}
+	if (pathname === "/api/client-stats" && request.method === "GET") {
+		void getMaintenanceState()
+			.then((state) => {
+				respond(
+					response,
+					200,
+					JSON.stringify({
+						visible: state.showClientCount,
+						activeClients: state.showClientCount
+							? pruneActiveClients()
+							: 0
+					}),
+					{ "Content-Type": "application/json; charset=utf-8" }
+				);
+			})
+			.catch((error: unknown) => {
+				console.error("Failed to read client stats:", error);
+				respond(response, 503, "Client stats unavailable.");
+			});
+		return;
+	}
 	if (pathname === "/api/admin/login" && request.method === "POST") {
 		void readJson(request)
 			.then((body: unknown) => {
@@ -500,6 +568,16 @@ const server = http.createServer((request, response) => {
 				console.error("Failed to read admin maintenance state:", error);
 				respond(response, 503, "Maintenance state unavailable.");
 			});
+		return;
+	}
+	if (pathname === "/api/admin/stats" && request.method === "GET") {
+		if (!isAdmin(request)) {
+			respond(response, 401, "Administrator login required.");
+			return;
+		}
+		respond(response, 200, JSON.stringify(clientStats()), {
+			"Content-Type": "application/json; charset=utf-8"
+		});
 		return;
 	}
 	if (pathname === "/api/admin/maintenance" && request.method === "PUT") {
@@ -560,7 +638,11 @@ server.on("upgrade", (request, socket, head) => {
 	}
 
 	wispSockets.add(socket);
-	socket.once("close", () => wispSockets.delete(socket));
+	socket.once("close", () => {
+		wispSockets.delete(socket);
+		const bytesWritten = (socket as Duplex & { bytesWritten?: number }).bytesWritten;
+		if (typeof bytesWritten === "number") totalDownloadedBytes += bytesWritten;
+	});
 	try {
 		if (wireproxyProcess) {
 			wisp.routeRequest(request, socket, head, {

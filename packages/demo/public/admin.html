@@ -106,6 +106,10 @@
 			.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 			.section-heading h2 { margin: 0; font-size: 1.25rem; }
 			.badge { padding: .3rem .6rem; border-radius: 999px; background: #e8f7ed; color: #23733c; font-size: .75rem; }
+			.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+			.stat { padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; background: rgb(255 255 255 / 62%); }
+			.stat strong { display: block; font-size: 1.35rem; }
+			.stat span { color: var(--muted); font-size: .72rem; }
 			label { display: grid; gap: .5rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
 			.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 			input, textarea, button {
@@ -145,6 +149,7 @@
 				.brand { align-items: flex-start; }
 				.field-grid { grid-template-columns: 1fr; }
 				.actions { flex-direction: column; }
+				.stats { grid-template-columns: 1fr; }
 			}
 
 			@media (prefers-reduced-motion: reduce) {
@@ -174,6 +179,7 @@
 			</form>
 			<form id="settings" class="hidden">
 					<label><span><input id="enabled" type="checkbox" /> Show maintenance banner</span></label>
+				<label><span><input id="showClientCount" type="checkbox" /> Show active client count publicly</span></label>
 					<label>Public message <textarea id="message" maxlength="2000" placeholder="Tell visitors what is happening..."></textarea></label>
 					<div class="field-grid">
 						<label>Start date/time <input id="startAt" type="datetime-local" /></label>
@@ -185,6 +191,17 @@
 						<button id="logout" class="secondary" type="button">Sign out</button>
 					</div>
 			</form>
+			<div id="statsPanel" class="hidden">
+				<div class="divider"></div>
+				<div class="section-heading"><h2>Live activity</h2><span class="badge">Auto-refreshing</span></div>
+				<div class="stats">
+					<div class="stat"><strong id="activeClients">—</strong><span>active clients</span></div>
+					<div class="stat"><strong id="wispConnections">—</strong><span>Wisp connections</span></div>
+					<div class="stat"><strong id="downloadedBytes">—</strong><span>data downloaded</span></div>
+					<div class="stat"><strong id="uptime">—</strong><span>server uptime</span></div>
+				</div>
+				<p id="statsUpdated">Waiting for telemetry...</p>
+			</div>
 			</main>
 			<footer>email me zayd@emailthing.xyz to claim as a og</footer>
 		</div>
@@ -204,10 +221,38 @@
 				$("message").value = state.message;
 				$("startAt").value = toInput(state.startAt);
 				$("endAt").value = toInput(state.endAt);
+				$("showClientCount").checked = state.showClientCount;
 				$("login").classList.add("hidden");
 				$("settings").classList.remove("hidden");
+				$("statsPanel").classList.remove("hidden");
+				void refreshStats();
 				status("Settings loaded.", "success");
 			}
+			const formatBytes = (bytes) => {
+				if (bytes < 1024) return `${bytes} B`;
+				const units = ["KB", "MB", "GB", "TB"];
+				let value = bytes;
+				let unit = -1;
+				do { value /= 1024; unit++; } while (value >= 1024 && unit < units.length - 1);
+				return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
+			};
+			const formatDuration = (seconds) => {
+				const days = Math.floor(seconds / 86400);
+				const hours = Math.floor(seconds % 86400 / 3600);
+				const minutes = Math.floor(seconds % 3600 / 60);
+				return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+			};
+			async function refreshStats() {
+				const response = await fetch("/api/admin/stats", { cache: "no-store" });
+				if (!response.ok) return;
+				const stats = await response.json();
+				$("activeClients").textContent = stats.activeClients;
+				$("wispConnections").textContent = stats.wispConnections;
+				$("downloadedBytes").textContent = formatBytes(stats.totalDownloadedBytes);
+				$("uptime").textContent = formatDuration(stats.uptimeSeconds);
+				$("statsUpdated").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+			}
+			setInterval(() => { if (!$("statsPanel").classList.contains("hidden")) void refreshStats(); }, 10000);
 			$("login").addEventListener("submit", async (event) => {
 				event.preventDefault();
 				const response = await fetch("/api/admin/login", {
@@ -232,7 +277,8 @@
 						enabled: $("enabled").checked,
 						message: $("message").value,
 						startAt: toIso($("startAt").value),
-						endAt: toIso($("endAt").value)
+						endAt: toIso($("endAt").value),
+						showClientCount: $("showClientCount").checked
 					})
 				});
 				status(

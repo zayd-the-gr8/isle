@@ -45,6 +45,6 @@ The Render build downloads a pinned Wireproxy release and verifies its checksum.
 
 ## Maintenance controls
 
-The deployed service includes a password-protected control panel at `/admin.html`. Set the Render secret `MAINTENANCE_ADMIN_PASSWORD` before using it. The panel controls the banner message and optional start/end times; visitors see the banner while it is active.
+The deployed service includes a password-protected control panel at `/admin.html`. Set the Render secret `MAINTENANCE_ADMIN_PASSWORD` before using it. The panel controls the banner message, optional start/end times, and whether the theme-aware `active clients ##` badge is shown. The admin panel also reports active clients, Wisp connections, uptime, and downloaded data.
 
 For settings to survive restarts and redeploys, configure an Upstash Redis database and add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` as Render secrets. Without those variables, settings are kept only in the running process and reset when the service restarts.

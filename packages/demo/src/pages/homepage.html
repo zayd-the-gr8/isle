@@ -345,6 +345,19 @@
 				font-size: 0.8rem;
 			}
 
+			.setting-checkbox {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+			}
+
+			.setting-checkbox input {
+				width: 18px;
+				min-height: 18px;
+				accent-color: var(--accent);
+			}
+
 			.settings-status {
 				min-height: 1.2em;
 				margin: 14px 0 0;
@@ -488,6 +501,10 @@
 					<option value="clever">Clever</option>
 				</select>
 			</label>
+			<label class="setting setting-checkbox" for="active-client-count">
+				<span>Show active clients</span>
+				<input id="active-client-count" type="checkbox" checked />
+			</label>
 			<label class="setting" for="wisp-url">
 				Wisp server
 				<input
@@ -540,8 +557,9 @@
 				const messageToken = "{{PREFERENCE_TOKEN}}";
 				const themeSelect = document.querySelector("#theme-select");
 				const cloakSelect = document.querySelector("#cloak-select");
+				const activeClientCount = document.querySelector("#active-client-count");
 				const status = document.querySelector("#settings-status");
-				const settings = { theme: "stark-night", cloak: "none" };
+				const settings = { theme: "stark-night", cloak: "none", showClientCount: true };
 				let savedRuntimeSettings;
 				let runtimeDefaults;
 
@@ -553,6 +571,7 @@
 					document.body.dataset.theme = nextSettings.theme;
 					themeSelect.value = nextSettings.theme;
 					cloakSelect.value = nextSettings.cloak;
+					activeClientCount.checked = nextSettings.showClientCount !== false;
 				}
 
 				function applyRuntimeSettings(nextSettings) {
@@ -602,6 +621,7 @@
 				function saveSettings() {
 					settings.theme = themeSelect.value;
 					settings.cloak = cloakSelect.value;
+					settings.showClientCount = activeClientCount.checked;
 					document.body.dataset.theme = settings.theme;
 					updateStatus("");
 					window.parent.postMessage(
@@ -630,6 +650,7 @@
 
 				themeSelect.addEventListener("change", saveSettings);
 				cloakSelect.addEventListener("change", saveSettings);
+				activeClientCount.addEventListener("change", saveSettings);
 				document.querySelector("#apply-runtime-settings").addEventListener("click", () => {
 					saveRuntimeSettings();
 				});
