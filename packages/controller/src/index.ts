@@ -527,6 +527,11 @@ export class Controller {
 				this.setupMessagePort();
 			}
 		});
+		window.setInterval(() => {
+			this.serviceWorkerController.postMessage({
+				$controller$ping: { id: this.id },
+			});
+		}, 15_000);
 	}
 
 	private setupMessagePort() {

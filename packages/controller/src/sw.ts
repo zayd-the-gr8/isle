@@ -24,6 +24,15 @@ addEventListener("message", (e) => {
 			delete cookieResolvers[done.id];
 		}
 	}
+	if (e.data.$controller$ping && typeof e.data.$controller$ping === "object") {
+		const { id } = e.data.$controller$ping;
+		if (typeof id === "string" && !tabs.some((tab) => tab.id === id)) {
+			e.source?.postMessage({
+				$controller$swrevive: { registered: tabs.map((tab) => tab.id) },
+			});
+		}
+		return;
+	}
 
 	if (
 		e.data.$sw$initRemoteTransport &&
