@@ -35,7 +35,7 @@ this project uses some keys of scramjet ! this project couldn't be done without 
 
 all designs are made, copyright (c) ZAYD AHMED 
 
-## Optional WireGuard egress on Render
+## WireProxy / VPN
 
 The Render web service can route Wisp TCP connections through [Wireproxy](https://github.com/windtf/wireproxy) and a WireGuard peer. This can provide an alternate route when Render's shared datacenter IPs cannot reach a site. Wireproxy is a client, not a VPN provider, so you need a WireGuard client config from a VPN provider or a WireGuard server you control.
 
