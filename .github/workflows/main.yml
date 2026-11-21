@@ -360,6 +360,35 @@ jobs:
           tag_name: latest
           github_token: ${{ github.token }}
 
+      - name: Delete existing versioned tags for re-release
+        id: delete-versioned-tags
+        run: |
+          # Delete versioned tags that may already exist to allow clean re-release
+          for pkg in scramjet scramjet-controller scramjet-utils proxy-bootstrap create-proxy-app; do
+            case "$pkg" in
+              scramjet) VERSION=$(jq -r .version packages/core/package.json) ;;
+              scramjet-controller) VERSION=$(jq -r .version packages/controller/package.json) ;;
+              scramjet-utils) VERSION=$(jq -r .version packages/utils/package.json) ;;
+              proxy-bootstrap) VERSION=$(jq -r .version packages/bootstrap/package.json) ;;
+              create-proxy-app) VERSION=$(jq -r .version packages/create-proxy-app/package.json) ;;
+            esac
+            TAG="v${VERSION}"
+            if git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "Deleting existing tag: $TAG"
+              git tag -d "$TAG"
+              git push origin --delete "$TAG" 2>/dev/null || true
+            fi
+            # Determine tag suffix for controller-style tags
+            if [ "$pkg" = "scramjet-controller" ]; then
+              CTRL_TAG="v${VERSION}-controller"
+              if git rev-parse "$CTRL_TAG" >/dev/null 2>&1; then
+                echo "Deleting existing tag: $CTRL_TAG"
+                git tag -d "$CTRL_TAG"
+                git push origin --delete "$CTRL_TAG" 2>/dev/null || true
+              fi
+            fi
+          done
+
       - name: Get artifacts
         uses: actions/download-artifact@v4
         with:

@@ -518,6 +518,24 @@
 					spellcheck="false"
 				/>
 			</label>
+			<label class="setting" for="proxy-backend">
+				Proxy backend
+				<select id="proxy-backend">
+					<option value="wisp">Wisp</option>
+					<option value="ultraviolet">Ultraviolet</option>
+				</select>
+			</label>
+			<label class="setting" for="ultraviolet-url">
+				Ultraviolet instance
+				<input
+					class="setting-control"
+					id="ultraviolet-url"
+					type="text"
+					placeholder="https://uv.example.com/"
+					autocomplete="url"
+					spellcheck="false"
+				/>
+			</label>
 			<label class="setting" for="transport-select">
 				Transport
 				<select id="transport-select">
@@ -560,6 +578,8 @@
 				const themeSelect = document.querySelector("#theme-select");
 				const cloakSelect = document.querySelector("#cloak-select");
 				const activeClientCount = document.querySelector("#active-client-count");
+				const proxyBackend = document.querySelector("#proxy-backend");
+				const ultravioletUrl = document.querySelector("#ultraviolet-url");
 				const status = document.querySelector("#settings-status");
 				const settings = { theme: "stark-night", cloak: "none", showClientCount: true };
 				let savedRuntimeSettings;
@@ -582,6 +602,8 @@
 					document.querySelector("#transport-select").value = nextSettings.transport;
 					document.querySelector("#home-url").value = nextSettings.homeUrl;
 					document.querySelector("#max-requests").value = nextSettings.maxRequests;
+					document.querySelector("#proxy-backend").value = nextSettings.proxyBackend || "wisp";
+					document.querySelector("#ultraviolet-url").value = nextSettings.ultravioletUrl || "";
 				}
 
 				function saveRuntimeSettings(statusMessage = "Settings saved.") {
@@ -596,6 +618,8 @@
 								transport: document.querySelector("#transport-select").value,
 								homeUrl: document.querySelector("#home-url").value,
 								maxRequests: document.querySelector("#max-requests").value,
+								proxyBackend: document.querySelector("#proxy-backend").value,
+								ultravioletUrl: document.querySelector("#ultraviolet-url").value,
 							},
 						},
 						"*"
