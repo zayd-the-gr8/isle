@@ -4,12 +4,17 @@ import FlagEditor from "../components/FlagEditor";
 import {
 	AVAILABLE_TRANSPORTS,
 	type AvailableTransports,
+	autoSelectWispServer,
 	demoSettingsDefaults,
 	demoSettingsStore,
+	DEFAULT_WISP_SERVERS,
 	normalizeHomeUrl,
 	normalizeMaxRequests,
 	normalizeTransport,
 	normalizeWispUrl,
+	refreshWispServerStatuses,
+	type WispServerInfo,
+	wispServerStatusStore,
 } from "../store";
 
 const SettingsView: Component<
@@ -30,6 +35,40 @@ const SettingsView: Component<
 	this.maxRequestsInput ??= String(demoSettingsStore.maxRequests);
 	this.status ??= "";
 	this.error ??= "";
+	this.refreshing ??= false;
+
+	const currentServer = () =>
+		DEFAULT_WISP_SERVERS.find((s) => normalizeWispUrl(s.url) === demoSettingsStore.wispUrl);
+
+	const isCustomServer = () => {
+		const current = demoSettingsStore.wispUrl;
+		return !DEFAULT_WISP_SERVERS.some((s) => current === normalizeWispUrl(s.url));
+	};
+
+	const serverStatus = (url: string): WispServerInfo | null =>
+		wispServerStatusStore[url] ?? null;
+
+	const refreshStatus = async () => {
+		this.refreshing = true;
+		this.error = "";
+		try {
+			await refreshWispServerStatuses();
+			this.status = "Wisp server statuses refreshed.";
+		} catch (error) {
+			this.error =
+				error instanceof Error ? error.message : "Failed to refresh wisp statuses.";
+		} finally {
+			this.refreshing = false;
+		}
+	};
+
+	const applyFastest = async () => {
+		this.error = "";
+		this.status = "Selecting fastest online wisp server...";
+		await autoSelectWispServer();
+		this.wispUrlInput = demoSettingsStore.wispUrl;
+		this.status = `Using ${demoSettingsStore.wispUrl}`;
+	};
 
 	const syncInputsFromStore = () => {
 		this.wispUrlInput = demoSettingsStore.wispUrl;
@@ -94,8 +133,63 @@ const SettingsView: Component<
 				</p>
 			</div>
 
+			<div class="field">
+				<span class="label">Default wisp servers</span>
+				<p class="hint">
+					The demo checks each server and automatically uses the fastest one
+					that is online. Offline servers are never chosen.
+				</p>
+				<div class="server-list">
+					{DEFAULT_WISP_SERVERS.map((server) => {
+						const info = serverStatus(server.url);
+						const selected = currentServer()?.url === server.url;
+						const online = info?.online;
+						const latency = info?.latencyMs;
+						return (
+							<div class={`server-row ${selected ? "selected" : ""}`}>
+								<div class="server-info">
+									<span class="server-label">{server.label}</span>
+									<span class="server-url">{server.url}</span>
+								</div>
+								<div class="server-status">
+									{info === null ? (
+										<span class="badge offline">not checked</span>
+									) : online === true ? (
+										<span class="badge online">
+											online{latency != null ? ` · ${latency} ms` : ""}
+										</span>
+									) : (
+										<span class="badge offline">offline</span>
+									)}
+								</div>
+								{info === null || online === false ? null : (
+									<button
+										type="button"
+										class={selected ? "button selected" : "button"}
+										on:click={() => {
+											demoSettingsStore.wispUrl = normalizeWispUrl(server.url);
+											this.wispUrlInput = demoSettingsStore.wispUrl;
+											this.status = `Using ${server.label}`;
+										}}>
+										{selected ? "Selected" : "Use"}
+									</button>
+								)}
+							</div>
+						);
+					})}
+				</div>
+				<div class="server-actions">
+					<button type="button" on:click={refreshStatus} disabled={this.refreshing}>
+						{this.refreshing ? "Checking…" : "Check status"}
+					</button>
+					<button type="button" class="primary" on:click={applyFastest}>
+						Use fastest online
+					</button>
+				</div>
+			</div>
+
 			<label class="field">
-				<span class="label">Wisp server</span>
+				<span class="label">Wisp server (bring your own)</span>
 				<input
 					type="text"
 					value={use(this.wispUrlInput)}
@@ -104,7 +198,9 @@ const SettingsView: Component<
 						this.wispUrlInput = (e.target as HTMLInputElement).value;
 					}}
 				/>
-				<span class="hint">Example: ws://localhost:4142/</span>
+				<span class="hint">
+					Example: ws://localhost:4142/ — enter a custom wisp server to override the defaults.
+				</span>
 			</label>
 
 			<label class="field">
@@ -353,6 +449,92 @@ SettingsView.style = css`
 
 	.dev-options[open] summary {
 		border-bottom: 1px solid #2a2a2a;
+	}
+
+	.server-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		margin-top: 10px;
+	}
+
+	.server-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 0.6em 0.8em;
+		border: 1px solid #2a2a2a;
+		border-radius: 0;
+		background: #111;
+	}
+
+	.server-row.selected {
+		border-color: #4a4a4a;
+		background: #1a1a1a;
+	}
+
+	.server-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.server-label {
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: #e5e7eb;
+	}
+
+	.server-url {
+		font-size: 0.72rem;
+		color: #8f8f8f;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.server-status {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.15em 0.5em;
+		border-radius: 0;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+
+	.badge.online {
+		border: 1px solid #2a6a2a;
+		background: #1a331a;
+		color: #8fdd8f;
+	}
+
+	.badge.offline {
+		border: 1px solid #5a2a2a;
+		background: #331a1a;
+		color: #e7b0b0;
+	}
+
+	.server-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 10px;
+	}
+
+	.server-actions button {
+		flex: 0 0 auto;
 	}
 `;
 export default SettingsView;

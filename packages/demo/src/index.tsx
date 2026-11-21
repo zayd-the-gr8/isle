@@ -5,7 +5,7 @@ import EpoxyClient from "@mercuryworkshop/epoxy-transport";
 import { defaultConfigDev } from "@mercuryworkshop/scramjet";
 import { Controller } from "@mercuryworkshop/scramjet-controller";
 import { HttpCachePlugin } from "@mercuryworkshop/scramjet-utils";
-import { demoSettingsStore } from "./store";
+import { demoSettingsStore, autoSelectWispServer } from "./store";
 
 let app = document.getElementById("app")!;
 
@@ -52,6 +52,11 @@ async function init() {
 	interstitial.showModal();
 
 	try {
+		// Pick the fastest online default Wisp server before connecting so the
+		// controller uses the best available transport right away.
+		await autoSelectWispServer();
+		interstitial.$.state.status = `Wisp server: ${demoSettingsStore.wispUrl}`;
+
 		const registration = await navigator.serviceWorker.register("./sw.js");
 
 		// Non-blocking progress updates on state transitions.
