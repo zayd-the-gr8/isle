@@ -253,24 +253,26 @@
 				position: fixed;
 				right: 18px;
 				bottom: 18px;
-				display: grid;
-				width: 38px;
-				height: 38px;
-				padding: 0;
-				place-items: center;
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				padding: 6px 10px;
 				border: 1px solid var(--field-border);
-				border-radius: 50%;
+				border-radius: 999px;
 				background: var(--field-bg);
 				box-shadow: 0 0 18px var(--field-glow);
 				color: var(--text);
 				font: inherit;
-				font-size: 1.15rem;
+				font-size: 0.8rem;
+				text-transform: lowercase;
+				letter-spacing: 0.04em;
 				cursor: pointer;
 				transition:
 					transform 180ms ease,
 					border-color 180ms ease,
 					color 180ms ease;
 				animation: settings-enter 400ms 250ms ease-out both;
+				white-space: nowrap;
 			}
 
 			.settings-button:hover,
@@ -467,7 +469,7 @@
 			</form>
 		</main>
 		<button class="settings-button" id="settings-button" type="button" aria-label="Settings" title="Settings">
-			🍁
+			settings
 		</button>
 		<dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
 			<div class="settings-header">

@@ -4,13 +4,12 @@ import BrowserView, { browserState } from "./pages/BrowserView";
 import RequestViewer from "./pages/RequestViewer";
 import GamesView from "./pages/GamesView";
 import PlaygroundView from "./pages/Playground";
-import SettingsView from "./pages/SettingsPage";
 
 const App: Component<
 	{},
 	{},
 	{
-		activeTab: "browser" | "games" | "playground" | "requests" | "dev-options" | "settings";
+		activeTab: "browser" | "games" | "playground" | "requests" | "dev-options";
 		gamesLoaded: boolean;
 	}
 > = function (cx) {
@@ -54,14 +53,6 @@ const App: Component<
 						}}
 					>
 						Playground
-					</button>
-					<button
-						class={use(this.activeTab).map((tab) => `tab-button ${tab === "settings" ? "active" : ""}`)}
-						on:click={() => {
-							this.activeTab = "settings";
-						}}
-					>
-						Settings
 					</button>
 				</div>
 			</div>
@@ -109,14 +100,6 @@ const App: Component<
 					</div>
 					<FlagEditor embedded={true} />
 				</div>
-			</div>
-
-			<div
-				class={use(this.activeTab).map(
-					(tab) => `tab-panel settings-panel ${tab === "settings" ? "active" : ""}`
-				)}
-			>
-				<SettingsView />
 			</div>
 
 		</div>
