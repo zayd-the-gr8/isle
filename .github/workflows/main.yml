@@ -353,13 +353,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Delete old release and tag
-        uses: dev-drprasad/delete-tag-and-release@v1.1
-        with:
-          delete_release: true
-          tag_name: latest
-          github_token: ${{ github.token }}
-
       - name: Delete existing versioned tags for re-release
         id: delete-versioned-tags
         run: |
