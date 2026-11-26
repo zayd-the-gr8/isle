@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>/isle — server error</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single:wght@300..900&display=swap" rel="stylesheet" />
+		<style>
+			:root { font-family: "Bitcount Grid Single", monospace; }
+			* { box-sizing: border-box; }
+			body {
+				--page-bg: #050505;
+				--grid-line: rgb(255 255 255 / 6%);
+				--glow: #171717;
+				--text: #f5f5f5;
+				--muted: #686868;
+				--field-bg: #030303;
+				--field-border: #111;
+				--field-glow: rgb(255 255 255 / 10%);
+				--accent: #aaa;
+				color-scheme: dark;
+				display: grid;
+				width: 100%;
+				min-width: 240px;
+				min-height: 100vh;
+				margin: 0;
+				place-items: center;
+				background-color: var(--page-bg);
+				background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px), radial-gradient(ellipse at center, var(--glow) 0, var(--page-bg) 78%);
+				background-size: 32px 32px, 32px 32px, 100% 100%;
+				color: var(--text);
+			}
+			main {
+				display: flex;
+				width: min(420px, calc(100% - 40px));
+				flex-direction: column;
+				align-items: center;
+				gap: clamp(24px, 8vh, 48px);
+				padding: 24px 0;
+				animation: error-enter 520ms cubic-bezier(0.2, 0.75, 0.35, 1) both;
+			}
+			h1 { margin: 0; color: var(--text); font-size: clamp(2rem, 10vw, 3rem); font-weight: 500; letter-spacing: 0.02em; line-height: 1; text-shadow: 0 0 18px rgb(255 255 255 / 22%); animation: error-enter 620ms cubic-bezier(0.2, 0.75, 0.35, 1) both; }
+			.error-code { font-size: clamp(1rem, 4vw, 1.5rem); color: var(--accent); font-weight: 600; letter-spacing: 0.04em; animation: error-enter 680ms 70ms cubic-bezier(0.2, 0.75, 0.35, 1) both; }
+			.error-message { color: var(--muted); font-size: clamp(0.75rem, 2vw, 0.95rem); letter-spacing: 0.04em; line-height: 1.5; text-align: center; max-width: 360px; animation: error-enter 740ms 140ms cubic-bezier(0.2, 0.75, 0.35, 1) both; }
+			.back-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--field-border); border-radius: 999px; background: var(--field-bg); color: var(--text); font: inherit; font-size: 0.8rem; text-transform: lowercase; letter-spacing: 0.04em; text-decoration: none; cursor: pointer; transition: border-color 180ms ease, color 180ms ease; animation: error-enter 860ms 280ms cubic-bezier(0.2, 0.75, 0.35, 1) both; }
+			.back-link:hover { border-color: var(--accent); color: var(--accent); }
+			@keyframes error-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+			@media (prefers-reduced-motion: reduce) { main, h1, .error-code, .error-message, .back-link { animation: none; transition: none; } }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>500</h1>
+			<div class="error-code">server error</div>
+			<div class="error-message">something went wrong on our end. please try again.</div>
+			<button class="back-link" onclick="window.location.href='/'">back to isle</button>
+		</main>
+	</body>
+</html>

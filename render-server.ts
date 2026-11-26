@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, readFile } from "node:fs";
 import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, timingSafeEqual } from "node:crypto";
@@ -285,6 +285,58 @@ wisp.options.stream_limit_per_host = 8;
 
 const wispSockets = new Set<Duplex>();
 
+const errorPageCache = new Map<string, string>();
+
+async function loadErrorPage(name: string): Promise<string | null> {
+	if (errorPageCache.has(name)) return errorPageCache.get(name)!;
+	const candidates = [
+		join(publicDirectory, `${name}.html`),
+		join(dirname(fileURLToPath(import.meta.url)), "packages/demo/src/pages", `${name}.html`)
+	];
+	for (const path of candidates) {
+		try {
+			const content = await readFile(path, "utf-8");
+			errorPageCache.set(name, content);
+			return content;
+		} catch {}
+	}
+	return null;
+}
+
+async function serveErrorPage(
+	response: http.ServerResponse,
+	status: number,
+	name: string,
+	title: string,
+	message: string,
+	details?: string,
+	extraHeaders: http.OutgoingHttpHeaders = {}
+) {
+	const html = await loadErrorPage(name);
+	if (html) {
+		const filled = html
+			.replace("{{CODE}}", String(status))
+			.replace("{{TITLE}}", title)
+			.replace("{{MESSAGE}}", message)
+			.replace("{{#if DETAILS}}<div class=\"error-details\">{{DETAILS}}</div>{{/if}}", details ? `<div class="error-details">${details}</div>` : "")
+			.replace("{{#if DETAILS}}<div class=\"error-details\">{{DETAILS}}</div>{{/if}}", "");
+		response.writeHead(status, {
+			"Content-Type": "text/html; charset=utf-8",
+			"X-Content-Type-Options": "nosniff",
+			...extraHeaders
+		});
+		response.end(filled);
+		return;
+	}
+	response.writeHead(status, {
+		"Content-Type": "text/plain; charset=utf-8",
+		"Content-Length": Buffer.byteLength(title),
+		"X-Content-Type-Options": "nosniff",
+		...extraHeaders
+	});
+	response.end(title);
+}
+
 function respond(
 	response: http.ServerResponse,
 	status: number,
@@ -329,7 +381,7 @@ function contentType(filePath: string): string {
 
 async function serveFile(request: http.IncomingMessage, response: http.ServerResponse) {
 	if (request.method !== "GET" && request.method !== "HEAD") {
-		respond(response, 405, "Method Not Allowed", { Allow: "GET, HEAD" });
+		await serveErrorPage(response, 405, "405", "method not allowed", "this request method is not allowed.", undefined, { Allow: "GET, HEAD" });
 		return;
 	}
 
@@ -337,18 +389,18 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 	try {
 		pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
 	} catch {
-		respond(response, 400, "Bad Request");
+		await serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
 		return;
 	}
 
 	if (pathname.includes("\0")) {
-		respond(response, 400, "Bad Request");
+		await serveErrorPage(response, 400, "400", "bad request", "invalid characters in request url.");
 		return;
 	}
 
 	const filePath = resolve(publicDirectory, `.${pathname}`);
 	if (filePath !== publicDirectory && !filePath.startsWith(`${publicDirectory}${sep}`)) {
-		respond(response, 400, "Bad Request");
+		await serveErrorPage(response, 400, "400", "bad request", "requested path is not allowed.");
 		return;
 	}
 
@@ -361,7 +413,7 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 			throw error;
 		}
 		if (extname(targetPath)) {
-			respond(response, 404, "Not Found");
+			await serveErrorPage(response, 404, "404", "not found", "the requested file could not be found.");
 			return;
 		}
 		targetPath = join(publicDirectory, "index.html");
@@ -369,7 +421,7 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 
 	const fileInfo = await stat(targetPath);
 	if (!fileInfo.isFile()) {
-		respond(response, 404, "Not Found");
+		await serveErrorPage(response, 404, "404", "not found", "the requested resource could not be found.");
 		return;
 	}
 
@@ -455,7 +507,7 @@ const server = http.createServer((request, response) => {
 	try {
 		pathname = new URL(request.url ?? "/", "http://localhost").pathname;
 	} catch {
-		respond(response, 400, "Bad Request");
+		await serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
 		return;
 	}
 
@@ -478,7 +530,7 @@ const server = http.createServer((request, response) => {
 			)
 			.catch((error: unknown) => {
 				console.error("Failed to read maintenance state:", error);
-				respond(response, 503, "Maintenance status unavailable.");
+				void serveErrorPage(response, 503, "503", "service unavailable", "maintenance status is currently unavailable.");
 			});
 		return;
 	}
@@ -490,13 +542,13 @@ const server = http.createServer((request, response) => {
 						? body.id
 						: undefined;
 				if (typeof id !== "string" || id.length < 16 || id.length > 128) {
-					respond(response, 400, "Invalid client id.");
+					void serveErrorPage(response, 400, "400", "bad request", "invalid client id.");
 					return;
 				}
 				activeClients.set(id, Date.now());
 				respond(response, 204, "");
 			})
-			.catch((error: unknown) => respond(response, 400, String(error)));
+			.catch((error: unknown) => void serveErrorPage(response, 400, "400", "bad request", String(error)));
 		return;
 	}
 	if (pathname === "/api/client-stats" && request.method === "GET") {
@@ -516,7 +568,7 @@ const server = http.createServer((request, response) => {
 			})
 			.catch((error: unknown) => {
 				console.error("Failed to read client stats:", error);
-				respond(response, 503, "Client stats unavailable.");
+				void serveErrorPage(response, 503, "503", "service unavailable", "client stats are currently unavailable.");
 			});
 		return;
 	}
@@ -532,7 +584,7 @@ const server = http.createServer((request, response) => {
 					typeof password !== "string" ||
 					!sameSecret(password, adminPassword)
 				) {
-					respond(response, 401, "Invalid administrator password.");
+					void serveErrorPage(response, 401, "401", "unauthorized", "invalid administrator password.");
 					return;
 				}
 				const session = randomBytes(32).toString("base64url");
@@ -542,7 +594,7 @@ const server = http.createServer((request, response) => {
 					"Set-Cookie": `maintenance_admin=${encodeURIComponent(session)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`
 				});
 			})
-			.catch((error: unknown) => respond(response, 400, String(error)));
+			.catch((error: unknown) => void serveErrorPage(response, 400, "400", "bad request", String(error)));
 		return;
 	}
 	if (pathname === "/api/admin/logout" && request.method === "POST") {
@@ -555,7 +607,7 @@ const server = http.createServer((request, response) => {
 	}
 	if (pathname === "/api/admin/maintenance" && request.method === "GET") {
 		if (!isAdmin(request)) {
-			respond(response, 401, "Administrator login required.");
+			void serveErrorPage(response, 401, "401", "unauthorized", "administrator login is required to view maintenance settings.");
 			return;
 		}
 		void getMaintenanceState()
@@ -566,13 +618,13 @@ const server = http.createServer((request, response) => {
 			)
 			.catch((error: unknown) => {
 				console.error("Failed to read admin maintenance state:", error);
-				respond(response, 503, "Maintenance state unavailable.");
+				void serveErrorPage(response, 503, "503", "service unavailable", "maintenance state is currently unavailable.");
 			});
 		return;
 	}
 	if (pathname === "/api/admin/stats" && request.method === "GET") {
 		if (!isAdmin(request)) {
-			respond(response, 401, "Administrator login required.");
+			void serveErrorPage(response, 401, "401", "unauthorized", "administrator login is required to view statistics.");
 			return;
 		}
 		respond(response, 200, JSON.stringify(clientStats()), {
@@ -582,13 +634,13 @@ const server = http.createServer((request, response) => {
 	}
 	if (pathname === "/api/admin/maintenance" && request.method === "PUT") {
 		if (!isAdmin(request)) {
-			respond(response, 401, "Administrator login required.");
+			void serveErrorPage(response, 401, "401", "unauthorized", "administrator login is required.");
 			return;
 		}
 		void readJson(request)
 			.then(async (body: unknown) => {
 				if (!isMaintenanceState(body)) {
-					respond(response, 400, "Invalid maintenance settings.");
+					void serveErrorPage(response, 400, "400", "bad request", "invalid maintenance settings provided.");
 					return;
 				}
 				await setMaintenanceState(body);
@@ -598,14 +650,12 @@ const server = http.createServer((request, response) => {
 			})
 			.catch((error: unknown) => {
 				console.error("Failed to update maintenance state:", error);
-				respond(response, 400, "Could not save maintenance settings.");
+				void serveErrorPage(response, 400, "400", "bad request", "could not save maintenance settings.");
 			});
 		return;
 	}
 	if (pathname === wispPath || pathname.startsWith(wispPath)) {
-		respond(response, 426, "WebSocket Upgrade Required", {
-			Upgrade: "websocket"
-		});
+		await serveErrorPage(response, 426, "426", "upgrade required", "a websocket upgrade is required for this endpoint.", undefined, { Upgrade: "websocket" });
 		return;
 	}
 
@@ -614,7 +664,7 @@ const server = http.createServer((request, response) => {
 		if (response.headersSent) {
 			response.destroy(error instanceof Error ? error : undefined);
 		} else {
-			respond(response, 500, "Internal Server Error");
+			await serveErrorPage(response, 500, "500", "server error", "an internal server error occurred.");
 		}
 	});
 });
