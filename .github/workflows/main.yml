@@ -480,23 +480,53 @@ jobs:
 
       - name: Publish Scramjet
         if: needs.version-check.outputs.scramjet_version_changed == 'true'
-        run: pnpm publish mercuryworkshop-scramjet-${{ needs.version-check.outputs.scramjet_new_version }}.tgz --access public --provenance ${{ needs.version-check.outputs.scramjet_tag_arg }}
+        run: |
+          TAG_ARG="${{ needs.version-check.outputs.scramjet_tag_arg }}"
+          if [ -n "$TAG_ARG" ]; then
+            pnpm publish mercuryworkshop-scramjet-${{ needs.version-check.outputs.scramjet_new_version }}.tgz --access public --provenance $TAG_ARG
+          else
+            pnpm publish mercuryworkshop-scramjet-${{ needs.version-check.outputs.scramjet_new_version }}.tgz --access public
+          fi
 
       - name: Publish Scramjet Controller
         if: needs.version-check.outputs.controller_version_changed == 'true'
-        run: pnpm publish mercuryworkshop-scramjet-controller-${{ needs.version-check.outputs.controller_new_version }}.tgz --access public --provenance ${{ needs.version-check.outputs.controller_tag_arg }}
+        run: |
+          TAG_ARG="${{ needs.version-check.outputs.controller_tag_arg }}"
+          if [ -n "$TAG_ARG" ]; then
+            pnpm publish mercuryworkshop-scramjet-controller-${{ needs.version-check.outputs.controller_new_version }}.tgz --access public --provenance $TAG_ARG
+          else
+            pnpm publish mercuryworkshop-scramjet-controller-${{ needs.version-check.outputs.controller_new_version }}.tgz --access public
+          fi
 
       - name: Publish Scramjet Utils
         if: needs.version-check.outputs.utils_version_changed == 'true'
-        run: pnpm publish mercuryworkshop-scramjet-utils-${{ needs.version-check.outputs.utils_new_version }}.tgz --access public --provenance ${{ needs.version-check.outputs.utils_tag_arg }}
+        run: |
+          TAG_ARG="${{ needs.version-check.outputs.utils_tag_arg }}"
+          if [ -n "$TAG_ARG" ]; then
+            pnpm publish mercuryworkshop-scramjet-utils-${{ needs.version-check.outputs.utils_new_version }}.tgz --access public --provenance $TAG_ARG
+          else
+            pnpm publish mercuryworkshop-scramjet-utils-${{ needs.version-check.outputs.utils_new_version }}.tgz --access public
+          fi
 
       - name: Publish Proxy Bootstrap
         if: needs.version-check.outputs.bootstrap_version_changed == 'true'
-        run: pnpm publish mercuryworkshop-proxy-bootstrap-${{ needs.version-check.outputs.bootstrap_new_version }}.tgz --access public --provenance ${{ needs.version-check.outputs.bootstrap_tag_arg }}
+        run: |
+          TAG_ARG="${{ needs.version-check.outputs.bootstrap_tag_arg }}"
+          if [ -n "$TAG_ARG" ]; then
+            pnpm publish mercuryworkshop-proxy-bootstrap-${{ needs.version-check.outputs.bootstrap_new_version }}.tgz --access public --provenance $TAG_ARG
+          else
+            pnpm publish mercuryworkshop-proxy-bootstrap-${{ needs.version-check.outputs.bootstrap_new_version }}.tgz --access public
+          fi
 
       - name: Publish create-proxy-app
         if: needs.version-check.outputs.create_proxy_app_version_changed == 'true'
-        run: pnpm publish create-proxy-app-${{ needs.version-check.outputs.create_proxy_app_new_version }}.tgz --access public --provenance ${{ needs.version-check.outputs.create_proxy_app_tag_arg }}
+        run: |
+          TAG_ARG="${{ needs.version-check.outputs.create_proxy_app_tag_arg }}"
+          if [ -n "$TAG_ARG" ]; then
+            pnpm publish create-proxy-app-${{ needs.version-check.outputs.create_proxy_app_new_version }}.tgz --access public --provenance $TAG_ARG
+          else
+            pnpm publish create-proxy-app-${{ needs.version-check.outputs.create_proxy_app_new_version }}.tgz --access public
+          fi
 
   frontend:
     name: Build Frontend
