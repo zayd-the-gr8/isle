@@ -291,7 +291,9 @@ async function loadErrorPage(name: string): Promise<string | null> {
 	if (errorPageCache.has(name)) return errorPageCache.get(name)!;
 	const candidates = [
 		join(publicDirectory, `${name}.html`),
-		join(dirname(fileURLToPath(import.meta.url)), "packages/demo/src/pages", `${name}.html`)
+		join(publicDirectory, `error-${name}.html`),
+		join(dirname(fileURLToPath(import.meta.url)), "packages/demo/src/pages", `${name}.html`),
+		join(dirname(fileURLToPath(import.meta.url)), "packages/demo/src/pages", `error-${name}.html`)
 	];
 	for (const path of candidates) {
 		try {
