@@ -381,7 +381,7 @@ function contentType(filePath: string): string {
 
 async function serveFile(request: http.IncomingMessage, response: http.ServerResponse) {
 	if (request.method !== "GET" && request.method !== "HEAD") {
-		await serveErrorPage(response, 405, "405", "method not allowed", "this request method is not allowed.", undefined, { Allow: "GET, HEAD" });
+		void serveErrorPage(response, 405, "405", "method not allowed", "this request method is not allowed.", undefined, { Allow: "GET, HEAD" });
 		return;
 	}
 
@@ -389,18 +389,18 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 	try {
 		pathname = decodeURIComponent(new URL(request.url ?? "/", "http://localhost").pathname);
 	} catch {
-		await serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
+		void serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
 		return;
 	}
 
 	if (pathname.includes("\0")) {
-		await serveErrorPage(response, 400, "400", "bad request", "invalid characters in request url.");
+		void serveErrorPage(response, 400, "400", "bad request", "invalid characters in request url.");
 		return;
 	}
 
 	const filePath = resolve(publicDirectory, `.${pathname}`);
 	if (filePath !== publicDirectory && !filePath.startsWith(`${publicDirectory}${sep}`)) {
-		await serveErrorPage(response, 400, "400", "bad request", "requested path is not allowed.");
+		void serveErrorPage(response, 400, "400", "bad request", "requested path is not allowed.");
 		return;
 	}
 
@@ -413,7 +413,7 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 			throw error;
 		}
 		if (extname(targetPath)) {
-			await serveErrorPage(response, 404, "404", "not found", "the requested file could not be found.");
+			void serveErrorPage(response, 404, "404", "not found", "the requested file could not be found.");
 			return;
 		}
 		targetPath = join(publicDirectory, "index.html");
@@ -421,7 +421,7 @@ async function serveFile(request: http.IncomingMessage, response: http.ServerRes
 
 	const fileInfo = await stat(targetPath);
 	if (!fileInfo.isFile()) {
-		await serveErrorPage(response, 404, "404", "not found", "the requested resource could not be found.");
+		void serveErrorPage(response, 404, "404", "not found", "the requested resource could not be found.");
 		return;
 	}
 
@@ -507,7 +507,7 @@ const server = http.createServer((request, response) => {
 	try {
 		pathname = new URL(request.url ?? "/", "http://localhost").pathname;
 	} catch {
-		await serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
+		void serveErrorPage(response, 400, "400", "bad request", "could not parse the request url.");
 		return;
 	}
 
@@ -655,7 +655,7 @@ const server = http.createServer((request, response) => {
 		return;
 	}
 	if (pathname === wispPath || pathname.startsWith(wispPath)) {
-		await serveErrorPage(response, 426, "426", "upgrade required", "a websocket upgrade is required for this endpoint.", undefined, { Upgrade: "websocket" });
+		void serveErrorPage(response, 426, "426", "upgrade required", "a websocket upgrade is required for this endpoint.", undefined, { Upgrade: "websocket" });
 		return;
 	}
 
@@ -664,7 +664,7 @@ const server = http.createServer((request, response) => {
 		if (response.headersSent) {
 			response.destroy(error instanceof Error ? error : undefined);
 		} else {
-			await serveErrorPage(response, 500, "500", "server error", "an internal server error occurred.");
+			void serveErrorPage(response, 500, "500", "server error", "an internal server error occurred.");
 		}
 	});
 });
